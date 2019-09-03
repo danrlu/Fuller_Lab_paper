@@ -1,4 +1,4 @@
-# Fuller_paper
+# Scripts for the paper from D. Lu, H. Sin, C. Lu and M. T. Fuller.
 
 Here are the original scripts used to process data for the paper. 
 
@@ -14,7 +14,7 @@ A few notes:
     SLURM version (starts from 0)
     `#SBATCH --array=0-8`
 
-- PCR duplicates are removed for ATAC-seq and ChIP-seq, if both ends of the read pair map to the exact same genomic positions (I highly recommend paired-end sequencing for them). PCR duplicates are not removed for RNAseq because read pairs mapped to the same genomic location could still flank different splicing variants. For any library, use as much input material, and as little PCR step as possible to increase library complexity.
+- PCR duplicates are removed for ATAC-seq and ChIP-seq, if both ends of the read pair map to the exact same genomic positions (I highly recommend paired-end sequencing for them). PCR duplicates are not removed for RNAseq because read pairs mapped to the same genomic location could still flank different splicing variants. In general it is better to use as much input material, and as few PCR cycles as possible to increase library complexity.
 
 - CAGE protocol involved no PCR amplification step. 
 
