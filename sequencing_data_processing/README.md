@@ -1,6 +1,7 @@
 # Scripts for the paper from D. Lu, H. Sin, C. Lu and M. T. Fuller.
 
 Here are the original scripts used to process raw sequencing data for the paper:
+
 **Raw sequencing data .fastq -> .bw for genomic browser viewing and read counts for downstream analysis**
 
 There are places for improvement (mostly, in several steps unzipping/writing out intermediate files was not necessary), and our high performance computing cluster upgraded from SGE to SLURM somewhere in the middle of analysis so it's a mix of job script format. I'm keeping them as they are for record keeping. 
