@@ -17,4 +17,4 @@ A few notes:
 
 - All multimapping reads were removed for quantification or viewing in genomic browser. I also tried a version (for all experiment) to assign each multimapping reads to 1 randomly selected location and it didn't seem to affect the genes we are interested in. 
 
-
+- ChIP-seq I started from .bam generated from published results, but to get to the .bam is totally identical to ATAC-seq. The only difference is after getting .bam file, ATAC-seq cares about the end of the reads (accessible region), but ChIP-seq cares about the entire regions the fragment covers (between the read pairs), so the steps to generate .bw for viewing, and MACS2 calling peaks is different. 
