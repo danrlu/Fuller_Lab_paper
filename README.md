@@ -2,7 +2,7 @@
 
 Here are the original scripts used to process data for the paper. 
 
-There are places for improvement (mostly, in several steps unzipping/writing out intermediate files was not necessary), and our high performance cluster upgraded from SGE to SLURM somewhere in the middle so it's a mix of job script format. I'm keeping them as they are for record keeping. 
+There are places for improvement (mostly, in several steps unzipping/writing out intermediate files was not necessary), and our high performance computing cluster upgraded from SGE to SLURM somewhere in the middle of analysis so it's a mix of job script format. I'm keeping them as they are for record keeping. 
 
 A few notes:
 - Put all .fastq files and the scripts into the same folder unless otherwise noted.
