@@ -1,4 +1,4 @@
-Here are the original scripts used to process raw sequencing data for the paper:
+## Here are the original scripts used to process raw sequencing data for the paper:
 
 ### **Raw sequencing data .fastq -> .bw for genomic browser viewing** 
 
