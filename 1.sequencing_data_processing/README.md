@@ -1,7 +1,8 @@
 Here are the original scripts used to process raw sequencing data for the paper:
 
-**Raw sequencing data .fastq -> .bw for genomic browser viewing** 
-**Raw sequencing data .fastq -> read counts for downstream analysis**
+## **Raw sequencing data .fastq -> .bw for genomic browser viewing** 
+
+## **Raw sequencing data .fastq -> read counts for downstream analysis**
 
 There are places for improvement (mostly, in several steps unzipping/writing out intermediate files was not necessary), and our high performance computing cluster upgraded from SGE to SLURM somewhere in the middle of analysis so it's a mix of job script format. I'm keeping them as they are for record keeping. 
 
@@ -15,7 +16,7 @@ A few notes:
     SLURM version (starts from 0)
     `#SBATCH --array=0-8`
 
-- PCR duplicates are removed for ATAC-seq and ChIP-seq, if both ends of the read pair map to the exact same genomic positions (I highly recommend paired-end sequencing for them). PCR duplicates are not removed for RNAseq because read pairs mapped to the same genomic location could still flank different splicing variants. In general it is better to use as much input material, and as few PCR cycles as possible to increase library complexity.
+- PCR duplicates are removed for ATAC-seq and ChIP-seq, if both ends of the read pair map to the exact same genomic positions (I highly recommend paired-end sequencing for them). PCR duplicates are not removed for RNAseq because read pairs mapped to the same genomic location could still flank different splicing variants. **In general it is better to use as much input material, and as few PCR cycles as possible to increase library complexity.**
 
 - CAGE protocol involved no PCR amplification step. 
 
