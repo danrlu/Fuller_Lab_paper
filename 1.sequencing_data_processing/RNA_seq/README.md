@@ -48,6 +48,7 @@ Run06BamtoBW.sh
 
 
 The whole list of scripts can be submitted as dependency jobs in one go (remember to replace Y with a number):
+```bash
 qsub Run01FastQC.sh
 qsub -hold_jid FastQC Run02Trim_PE.sh
 qsub -hold_jid Trim_PE Run03Map_pass1.sh
@@ -55,10 +56,10 @@ qsub -hold_jid Map_pass1 Run04Map_pass2.sh
 qsub -hold_jid Map_pass2 Run05Index_filter.sh 
 qsub -hold_jid Map_pass2 Run05CountTable.sh Y
 qsub -hold_jid Index_filter Run06BamtoBW.sh
+```
 
 
-
-
+--------------------
 1/14/2018 on SGE with
 
 modsappsdir
