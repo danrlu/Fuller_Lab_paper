@@ -3,9 +3,9 @@
 **Only need to do this once for each genome and annotation.**
 
 #### 1. download the genomic sequence (.fa) and the annotation file (.gtf, or .gff3, they contain the same info but in slightly different format).
-[ftp://ftp.ensembl.org/pub/]
-- in the current_fasta and current_gtf folder, look for the right species
+[Ensembl ftp](ftp://ftp.ensembl.org/pub/) in the current_fasta and current_gtf folder, look for the right species
 - Regardless of downstream applications, always use ALL the avaialable sequence with no masks (\*.dna.toplevel\*.fa) for mapping. During read mapping, if the aligner could not map a read to the genome due to the corresponding sequence being masked, it will try to find somewhere else to map it to.
+- DNA sequence is the same from all databases, the chromosome names and annotation varies. Ensembl is well-organized so I stick with it.
 
 
 #### 2. index the genome
