@@ -52,13 +52,13 @@ qsub Run06SizeMetrics_PE.sh
 #### 7.1 combine the adjusted .bed file 
 for replicates of the same condition into 1 bed file
 ```bash
-qsub Run_merge_adj.bed.sh
+qsub Run07merge_adj.bed.sh
 ```
 
 
 7.2 convert .bed to .bedgraph which is needed to convert to .bigwig for genomic viewer viewing. during conversion to .bedgraph, each library is normalized by total read counts. Note the reads at this step is filtered by deplicate, MAPQ and on main chromasomes. 
 ```bash
-qsub RunBedtoBGraphtoBW_Q20.sh
+qsub Run07BedtoBGraphtoBW_Q20.sh
 ```
 
 =====================
@@ -66,7 +66,7 @@ qsub RunBedtoBGraphtoBW_Q20.sh
 #### 8.1 combine the .bam files 
 merge replicates of the same condition into 1 .bam file
 ```bash
-qsub Run_merge_bam.sh
+qsub Run08merge_bam.sh
 ```
 
 
@@ -75,7 +75,7 @@ for paired-end reads, MACS2 only use read1 for peak calling, so calling peaks wi
 
 for ATAC-seq, if using the original .bam or .bed file that contains the entire reads, `--nomodel --shift -50 --extsize 100` will use the 5' end of reads to build pileup and call peaks. Alternatively, if using the adjusted.bed which only contains the 5' end, should do `--nomodel --shift 0 --extsize 9` the 9 here is consider the 9bp binding site of transposase all accessible.
 ```bash
-qsub Run_MACS_no_ctrl.sh
+qsub Run08MACS_no_ctrl.sh
 ```
 
 =====================
@@ -86,34 +86,49 @@ NucleoATAC needs 2 input files: (1) open chromatin regions to call nucleosomes. 
 #### 9.1 obtain open chromatin regions
 MACS2 call broad peaks. For historical reason, this step was done on individual replicates. 
 ```bash
-qsub Run_MACS_no_ctrl_broad.sh
+qsub Run09MACS_no_ctrl_broad.sh
 ```
 
 Then extend the peak regions by 200bp on both sides. This could create regions that overlap with each other, so need to do `bedtools merge` in the end
 ```bash
-qsub Run_individual_slop_merge.sh
+qsub Run09individual_slop_merge.sh
 ```
 
 Merge replicates
 ```bash
-qsub Run_merge_broadpeaks.sh
+qsub Run09merge_broadpeaks.sh
 ```
 
 #### 9.2 call nucleosome positions
 ```bash
-qsub Run_NATAC_array.sh
+qsub Run09NATAC_array.sh
 ```
 
 ----
+last used 12/12/2017 on SGE with
+
 gcc/5.2.0
+
 fastqc/0.11.2
+
 trim_galore/0.4.1
+
 perl-scg/5.24.0
+
 cutadapt/1.8.1(default)
+
 python/2.7(default)
+
 bwa/0.7.10
+
 Picard/1.130
+
 samtools/1.5
+
 bedtools/2.25.0
+
+sambamba/0.6.6
+
 MACS2/2.1.1
+
 nucleoatac/0.3.2
