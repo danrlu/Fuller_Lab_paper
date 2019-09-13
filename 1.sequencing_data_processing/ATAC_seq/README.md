@@ -127,6 +127,8 @@ samtools/1.5
 
 bedtools/2.25.0
 
+ucsc_tools/??
+
 sambamba/0.6.6
 
 MACS2/2.1.1
