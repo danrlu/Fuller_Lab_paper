@@ -21,4 +21,14 @@ MACS2/2.1.1
 
 BamtoBW last used 2/3/19 on SLURM
 
+plotly/2.0.0
+
 deepTools/3.1.0
+
+gcc/5.2.0
+
+cython/0.28.5
+
+python/2.7(default)
+
+pysam/0.15.0.1
