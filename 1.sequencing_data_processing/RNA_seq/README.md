@@ -35,8 +35,11 @@ qsub Run05Index_filter.sh
 #### 4b. (can run in parallel to 4a) prepare the count table for differential expression analysis
 REPLACE Y with a number: 2 for unstranded RNAseq, 3 for forward strand, 4 for reverse strand RNAseq (SMARTer stranded RNA-seq kit use 3)
 If unclear, open one of the \*_ReadsPerGene.out.tab files that Run04Map_pass2.sh generate: first column is gene ID, 2nd column is unstranded, 3rd is forward strand, 4 is reverse strand. If col 3 is similar to col 2, use Y=3, if col 4 is similar to col 2, use Y=4, if col 3 is similar to col 4 and their sum is similar to 2, use Y=2.
-**output count table: first column is gene ID, 2nd column is read counts**
-**output sample table: this is the sample table for DESeq2**, may or may not be useful depending on how DESeq2 is called.
+
+**output count table "srt.Y.txt": first column is gene ID, 2nd column is read counts**
+
+**output "sampleTable.txt": this is the sample table for DESeq2**, may or may not be useful depending on how DESeq2 is called.
+
 ```bash
 qsub Run05CountTable.sh Y
 ```
