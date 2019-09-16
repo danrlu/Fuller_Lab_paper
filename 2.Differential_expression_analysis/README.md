@@ -33,11 +33,11 @@ typical option is HTSeq. It was really slow in my hands (in 2016), so instead:
   
   - **DE is deep water. Interpret results with caution**. For example, DESeq2 does between sample normalization assuming majority of the genes do not change between samples and therefore the (roughly) median gene stays the same. So there will be bias if vast majority of genes do change. I highly recommend reading and trying to understand the assumptions behind the statistical models. 
   
-  - CAGE... 
+  - Our CAGE gave really strange results after DE analysis, so I'm not sure whether DESeq2 can be used for CAGE. 
   
 ## To compare different genes/genomic regions in the same sample
 
-  - RNA-seq: when comparing expression level of different genes in the same sample, one needs to consider the length of gene/transcript (longer genes will have more reads than shorter ones expressed at the same level). The complication is that one gene may have several isoforms, and therefore the 'length of gene' is not straightforward to calculate. I tend to use transcript-level analysis if comparing levels of different genes with Kallisto which returns TPM and makes life a lot easier. More on within sample normalization: https://haroldpimentel.wordpress.com/2014/05/08/whatthefpkmareviewrnaseqexpressionunits/
+  - RNA-seq: when comparing expression level of different genes in the same sample, one needs to consider the length of gene/transcript (longer genes will have more reads than shorter ones expressed at the same level). The complication is that one gene may have several isoforms, and therefore the 'length of gene' is not straightforward to calculate. I tend to use transcript-level analysis if comparing levels of different genes with Kallisto which returns TPM and makes life a lot easier. More on within sample normalization: https://haroldpimentel.wordpress.com/2014/05/08/what-the-fpkm-a-review-rna-seq-expression-units/
 
   - CAGE intrinsically measures the number of transcript generated at each promoter region, independent of gene length. If simply comparing expression level of promoters, no within sample normalization is needed. 
 
