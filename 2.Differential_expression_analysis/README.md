@@ -41,7 +41,7 @@ typical option is HTSeq. It was really slow in my hands (in 2016), so instead:
 
   - CAGE intrinsically measures the number of transcript generated at each promoter region, independent of gene length. If simply comparing expression level of promoters, no within sample normalization is needed. 
 
-  - ATAC-seq signal is really **strongly biased by the sequence preference of the transposase**. So to compare accessibility of different genomic region is much less meaningful (aka almost meaningless) than comparing the accessibility of the same region across different conditions.
+  - ATAC-seq signal is really __strongly biased by the sequence preference of the transposase__. So to compare accessibility of different genomic region is much less meaningful (aka almost meaningless) than comparing the accessibility of the same region across different conditions.
   
   - ChIP-seq: when calling peaks, MACS2 gives a score of the peak which takes into account of the local background (aka how strong the peak is comparing to the surrounding area), which is a good estimate when comparing different genomic locations.
   
