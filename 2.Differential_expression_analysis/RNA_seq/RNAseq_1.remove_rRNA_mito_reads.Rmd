@@ -1,0 +1,98 @@
+---
+title: "RNAseq_remove_rRNA_mito_reads"
+author: "Dan Lu"
+date: "1/26/2018"
+output: html_document
+---
+
+```{r}
+suppressWarnings(suppressMessages(library(dplyr)))
+suppressWarnings(suppressMessages(library(magrittr)))
+
+options(tibble.width = Inf)
+options(scipen=999)
+```
+
+
+Load lists of rRNA and mitochondria 
+```{r}
+fly_rDNA <- read.delim("fly_rDNA.bed", header=FALSE, stringsAsFactors=FALSE)%>%dplyr::select(V4)%>%dplyr::rename(V1=V4)
+
+fly_mito <- read.delim("fly_mito.bed", header=FALSE, stringsAsFactors=FALSE)%>%dplyr::select(V4)%>%dplyr::rename(V1=V4)
+
+fly_mito_rRNA <- read.delim("fly_mito_rRNA.bed", header=FALSE, stringsAsFactors=FALSE)%>%dplyr::select(V4)%>%dplyr::rename(V1=V4)
+
+fly_nonMito_rRNA <- read.delim("fly_nonMito_rRNA.bed", header=FALSE, stringsAsFactors=FALSE)%>%dplyr::select(V4)%>%dplyr::rename(V1=V4)
+
+fly_nonMito_protein <- read.delim("fly_nonMito_protein.bed", header=FALSE, stringsAsFactors=FALSE)%>%dplyr::select(V4)%>%dplyr::rename(V1=V4)
+```
+
+
+Create count file list, and create dataframe to hold total counts for each groups of genes
+```{r}
+file_list=list.files(pattern = '.ReadsPerGene\\.out\\.tab\\.srt\\.3_with_rRNA\\.txt')
+
+names(file_list)=substr(file_list,1,7)
+
+stats=data.frame(row.names=c("all","mito_rRNA","rRNA_non_mito","all_mito_gene","all_rDNA_gene","fly_nonMito_protein.bed"))
+
+```
+
+
+```{r}
+separate_RMH <- function(i) {
+    # load the count files
+    count_file_name=as.character(file_list[[i]])
+    count_file= read.delim(count_file_name, header=FALSE, stringsAsFactors=FALSE)
+    # remove last 4 rows that are not gene counts. Now this is taken care of in Run05CountTable.sh
+#    a=nrow(count_file)-4
+#    count_file%<>%slice(1:a)
+    
+
+    # remove rRNA, mito from the count file.
+    count_file_noRM=anti_join(count_file,fly_rDNA,by="V1")%>%anti_join(fly_mito,by="V1")%>%anti_join(fly_mito_rRNA,by="V1")%>%anti_join(fly_nonMito_rRNA,by="V1")%>%arrange(V1)
+    count_file_noRM_name=paste0(substr(count_file_name, 1, nchar(count_file_name)-14),"_noRM.txt")
+#    write.table(count_file_noRM, count_file_noRM_name, sep="\t", quote=F, col.names=F, row.names=F)
+    
+    
+    # take rDNA counts and put in a separate file for bookkeeping
+    count_file_rDNA=semi_join(count_file,fly_rDNA,by="V1")
+    count_file_rDNA_name = paste0(substr(count_file_name, 1, nchar(count_file_name)-14),"_rDNA.txt")
+#    write.table(count_file_rDNA, count_file_rDNA_name, sep="\t",  quote=F, col.names=F, row.names=F)
+    
+    # take mito counts
+    count_file_mito=semi_join(count_file,fly_mito,by="V1")
+    count_file_mito_name = paste0(substr(count_file_name, 1, nchar(count_file_name)-14),"_mito.txt")
+#    write.table(count_file_mito, count_file_mito_name, sep="\t",  quote=F, col.names=F, row.names=F)
+
+    # take rRNA_on_mito counts and put in a separate file for bookkeeping
+    count_file_rRM=semi_join(count_file,fly_mito_rRNA,by="V1")
+    count_file_rRM_name = paste0(substr(count_file_name, 1, nchar(count_file_name)-18),"_rRNA_on_mito.txt")
+#    write.table(count_file_rRM, count_file_rRM_name, sep="\t",  quote=F, col.names=F, row.names=F)
+    
+    # take rRNA_not_mito counts
+    count_file_rRnM=semi_join(count_file,fly_nonMito_rRNA,by="V1")
+    count_file_rRnM_name = paste0(substr(count_file_name, 1, nchar(count_file_name)-14),"_mito.txt")
+#    write.table(count_file_rRnM, count_file_rRnM_name, sep="\t",  quote=F, col.names=F, row.names=F)
+    
+    # take protein_coding_not_mito counts
+    count_file_nM_pro=semi_join(count_file,fly_nonMito_protein,by="V1")
+    count_file_nM_pro_name = paste0(substr(count_file_name, 1, nchar(count_file_name)-14),"_nonMito_protein.txt")
+    write.table(count_file_nM_pro, count_file_nM_pro_name, sep="\t",  quote=F, col.names=F, row.names=F)    
+    
+    
+    # calculate totatl counts for each groups of gene
+    stats["all",names(file_list)[[i]]]=sum(count_file$V2)
+    stats["all_mito_gene",names(file_list)[[i]]]=sum(count_file_mito$V2)
+    stats["mito_rRNA",names(file_list)[[i]]]=sum(count_file_rRM$V2)
+    stats["rRNA_non_mito",names(file_list)[[i]]]=sum(count_file_rRnM$V2)
+    stats["all_rDNA_gene",names(file_list)[[i]]]=sum(count_file_rDNA$V2)
+    stats["fly_nonMito_protein.bed",names(file_list)[[i]]]=sum(count_file_nM_pro$V2)
+    return(stats)
+}
+
+stats=lapply(seq_along(file_list), function(i) separate_RMH(i))
+
+write.table(stats, "stats_on_counts.txt", sep="\t",  quote=F, col.names=NA, row.names=T) 
+```
+

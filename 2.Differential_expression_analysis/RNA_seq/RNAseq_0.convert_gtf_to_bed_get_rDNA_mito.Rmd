@@ -1,0 +1,65 @@
+---
+title: "Get .bed from .gtf for mito, rRNA/rDNA"
+author: "Dan Lu"
+date: "1/15/2018"
+output: html_document
+---
+
+## Separate (1) genes from mitochondria DNA (2) rRNA from mitochondria (3) genes from rDNA (4) rRNA that are not on mitoDNA
+
+## Note the old list of genome/rRNA_FBgn_list.txt is filtered on by rRNA regardless of which chromosome/DNA it comes from
+
+```{r}
+suppressWarnings(suppressMessages(library(tidyverse)))
+suppressWarnings(suppressMessages(library(magrittr)))
+
+options(tibble.width = Inf)
+options(scipen=999)
+
+source("~/Dropbox/coding/R/my_package/genomicsDL/R/gtf_to_bed.r")
+```
+
+
+```{r}
+gtf <- read.delim("~/Dropbox/z-seq analysis/genome/Drosophila_melanogaster.BDGP6.84.gtf", header=FALSE, comment.char="#", stringsAsFactors=FALSE)
+
+levels(as.factor(gtf$V3))
+
+bed=gtf_to_bed(gtf, "gene")
+
+bed%<>%separate(X7,c("others","biotype"),sep="gene_biotype ")
+
+levels(as.factor(bed$biotype))
+levels(as.factor(bed$X1))
+
+# first separate by chromosome
+bed_mito=filter(bed,X1=="dmel_mitochondrion_genome")
+bed_nonMito=filter(bed,X1!="dmel_mitochondrion_genome")
+bed_rDNA=filter(bed,X1=="rDNA")
+
+# then for those that are not on mitoDNA nor rDNA
+levels(as.factor(bed_mito$biotype))
+levels(as.factor(bed_nonMito$biotype))
+levels(as.factor(bed_rDNA$biotype))
+
+bed_mito_rRNA=filter(bed_mito,biotype=="rRNA;")
+bed_nonMito_rRNA=filter(bed_nonMito,biotype=="rRNA;")
+bed_nonMito_protein=filter(bed_nonMito,biotype=="protein_coding;")
+
+nrow(bed_mito)
+nrow(bed_mito_rRNA)
+nrow(bed_nonMito_rRNA)
+nrow(bed_rDNA)
+nrow(bed_nonMito_protein)
+
+write.table(bed_mito, "fly_mito.bed", col.names = F, sep="\t", row.names = F, quote=F)
+
+write.table(bed_mito_rRNA, "fly_mito_rRNA.bed", col.names = F, sep="\t",row.names = F, quote=F)
+
+write.table(bed_nonMito_rRNA, "fly_nonMito_rRNA.bed", col.names = F, sep="\t", row.names = F, quote=F)
+
+write.table(bed_rDNA, "fly_rDNA.bed", col.names = F, sep="\t",row.names = F, quote=F)
+
+write.table(bed_nonMito_protein, "fly_nonMito_protein.bed", col.names = F, sep="\t",row.names = F, quote=F)
+```
+

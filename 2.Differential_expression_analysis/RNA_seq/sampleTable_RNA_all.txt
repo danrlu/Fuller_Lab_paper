@@ -1,0 +1,11 @@
+sampleName,fileName,condition
+SHS-1-1-HS0hr,SHS-1-1-ATCACG_S1_R1_001_val_1_ReadsPerGene.out.tab.srt.3_nonMito_protein.txt,HS0
+SHS-1-2-HS48hr,SHS-1-2-CGATGT_S2_R1_001_val_1_ReadsPerGene.out.tab.srt.3_nonMito_protein.txt,HS48
+SHS-1-3-HS72hr,SHS-1-3-TTAGGC_S3_R1_001_val_1_ReadsPerGene.out.tab.srt.3_nonMito_protein.txt,HS72
+SHS-1-8-Sa,SHS-1-8-ACTTGA_S8_R1_001_val_1_ReadsPerGene.out.tab.srt.3_nonMito_protein.txt,Sa
+SHS-1-9-Aly,SHS-1-9-GATCAG_S9_R1_001_val_1_ReadsPerGene.out.tab.srt.3_nonMito_protein.txt,Aly
+SHS-2-1-HS0hr,SHS-2-1-ATCACG_S1_R1_001_val_1_ReadsPerGene.out.tab.srt.3_nonMito_protein.txt,HS0
+SHS-2-2-HS48hr,SHS-2-2-CGATGT_S2_R1_001_val_1_ReadsPerGene.out.tab.srt.3_nonMito_protein.txt,HS48
+SHS-2-3-HS72hr,SHS-2-3-TTAGGC_S3_R1_001_val_1_ReadsPerGene.out.tab.srt.3_nonMito_protein.txt,HS72
+SHS-2-8-Sa,SHS-2-8-ACTTGA_S8_R1_001_val_1_ReadsPerGene.out.tab.srt.3_nonMito_protein.txt,Sa
+SHS-2-9-Aly,SHS-2-9-GATCAG_S9_R1_001_val_1_ReadsPerGene.out.tab.srt.3_nonMito_protein.txt,Aly

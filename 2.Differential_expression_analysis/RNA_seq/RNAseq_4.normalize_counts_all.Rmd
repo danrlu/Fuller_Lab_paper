@@ -1,0 +1,42 @@
+---
+title: ""
+author: "Dan Lu"
+date: ""
+output:  html_document
+---
+
+```{r message=F, warning=F, echo=F}
+library(DESeq2)
+library(tidyr)
+library(dplyr)
+library(magrittr) # for %>%
+
+```
+
+```{r}
+
+sample_name="_RNA_all"
+
+# load sampleTable which contains names of the count files
+sampleTable <- read.csv(paste0('sampleTable',sample_name,'.txt'))
+
+# Differential expression analysis
+dds <- DESeqDataSetFromHTSeqCount(sampleTable=sampleTable, design=~condition)
+
+dds <- dds[ rowSums(counts(dds)) > 30, ]  # filter out genes with total counts < 30 in all samples
+
+dds$condition <- relevel(dds$condition, ref="HS72") # set the level to be compared with. This is required by DESeq2 but not really used for this particular script
+
+
+rld <- rlog(dds,blind=FALSE)
+write.table(assay(rld),file=paste0("DE_results_rlog",sample_name,".txt"),sep = "\t",col.names=NA)
+
+
+```
+
+
+
+```{r}
+sessionInfo()
+```
+

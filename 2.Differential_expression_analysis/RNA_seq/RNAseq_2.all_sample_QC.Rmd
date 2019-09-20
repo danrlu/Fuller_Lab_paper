@@ -1,0 +1,64 @@
+---
+title: "RNAseq_counts_norm_QC"
+output: html_document
+date: "1/15/18"
+author: Dan Lu
+---
+
+Take all samples, do QC.
+
+```{r}
+suppressWarnings(suppressMessages(library(DESeq2)))
+suppressWarnings(suppressMessages(library(tidyverse)))
+suppressWarnings(suppressMessages(library(magrittr)))
+
+options(tibble.width = Inf)
+sessionInfo()
+```
+
+
+Load count files
+```{r}
+all_files=as_tibble(list.files(pattern = '.ReadsPerGene.out.tab.srt.3_nonMito_protein.txt'))%>%dplyr::rename(sampleName=value)
+sampleTable=dplyr::select(all_files,sampleName)
+sampleTable$fileName=sampleTable$sampleName
+sampleTable$sampleName=substr(sampleTable$sampleName,1,7)
+sampleTable$label=sampleTable$sampleName
+```
+
+
+Transformation of counts, neccessary for the following steps
+```{r}
+dds <- DESeqDataSetFromHTSeqCount(sampleTable=as.data.frame(sampleTable), design=~1)
+
+# dds <- DESeqDataSetFromHTSeqCount(sampleTable=as.data.frame(sampleTable), design=~condition)
+# Error in DESeqDataSet(se, design = design, ignoreRank) : 
+#   design has a single variable, with all samples having the same value.
+#   use instead a design of '~ 1'. estimateSizeFactors, rlog and the VST can then be used
+# In addition: Warning message:
+# In DESeqDataSet(se, design = design, ignoreRank) :
+#   some variables in design formula are characters, converting to factors
+
+rld <- rlog(dds, blind=T)
+```
+
+Clustering for between sample correlation
+```{r}
+library("pheatmap")
+library("RColorBrewer")
+sampleDists <- dist(t(assay(rld)))
+sampleDistMatrix <- as.matrix(sampleDists)
+rownames(sampleDistMatrix) <- rld$label
+colnames(sampleDistMatrix) <- NULL
+colors <- colorRampPalette( rev(brewer.pal(9, "Blues")) )(255)
+pheatmap(sampleDistMatrix,
+clustering_distance_rows=sampleDists,
+clustering_distance_cols=sampleDists,
+col=colors)
+```
+
+
+```{r}
+plotPCA(rld, intgroup="label")
+```
+

@@ -1,0 +1,79 @@
+---
+title: "RNAseq_DE_pairwise_comparison"
+output: html_document
+date: "11/6/17"
+author: Dan Lu
+---
+
+Differential expression analysis for pairs of conditions.
+
+```{r}
+suppressWarnings(suppressMessages(library(DESeq2)))
+suppressWarnings(suppressMessages(library(tidyverse)))
+suppressWarnings(suppressMessages(library(magrittr)))
+suppressWarnings(suppressMessages(library("biomaRt")))
+
+options(tibble.width = Inf)
+options(scipen=999)
+```
+
+
+Differential expression analysis
+```{r}
+# if want to use an existing sample table
+# sampleTable_exist <- read.csv('sampleTable.txt')
+# dds <- DESeqDataSetFromHTSeqCount(sampleTable=sampleTable_exist, design=~condition)
+# sample_name=''
+
+dds <- DESeqDataSetFromHTSeqCount(sampleTable=as.data.frame(sampleTable), design=~condition) #sampleTable is created in pairwise_master.R, with some samples labeled as 'control', some as 'treatment'.
+
+dds <- dds[ rowSums(counts(dds)) > 10, ]  # filter out genes with total counts < 10 across all samples.
+# didn't do this so the result tables have all genes. easier for merging for Hosu.
+
+dds$condition <- relevel(dds$condition, ref="control") # set the level to be compared with
+
+dds <- DESeq(dds)
+res <- results(dds)
+
+resOrdered <- res[order(res$padj),]
+
+write.table(res,file=paste0("DE_",sample_name,"_results_all.txt"),sep = "\t",col.names=NA)
+
+# plot raw log2FC
+plotMA(res, ylim=c(-10,10))
+
+# plot shrinked Log2FC
+resultsNames(dds)
+resLFC <- lfcShrink(dds, coef=2)
+plotMA(resLFC, ylim=c(-10,10))
+```
+
+
+
+Scatter plot between samples to see how good replicates are
+```{r fig.asp = 1}
+count_log=counts(dds,normalized=TRUE)+1
+
+panel.cor <- function(x, y){
+    usr <- par("usr"); on.exit(par(usr))
+    par(usr = c(0, 1, 0, 1),xlog = FALSE, ylog = FALSE)
+    r <- round(cor(x, y), digits=3)
+    txt <- paste0("R = ", r)
+    cex.cor <- 0.8/strwidth(txt)
+    text(0.5, 0.5, txt)
+}
+
+upper.panel<-function(x, y){
+  points(x,y, pch=20, lwd=0.2, col=rgb(0, 0, 0, 0.2))
+}
+pairs(count_log[,1:4], lower.panel = panel.cor, 
+      upper.panel = upper.panel, log = "xy")
+
+```
+
+
+
+```{r}
+sessionInfo()
+```
+
