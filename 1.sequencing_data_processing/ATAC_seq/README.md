@@ -37,7 +37,10 @@ qsub Run05Filter_B2B_AdjBed_Q20.sh
 
 
 #### 6. mapping statistics. 
-these operates on the .bam files to see mapping metrics. the size metrics should show periodicity of fragment size that correspond to fragments that enclose no nucleosome, 1 nucleosome, 2 nucleosomes etc. This correlates with quality of ATAC-seq library.
+these operates on the .bam files to see mapping metrics. 
+
+the size metrics should show periodicity of fragment size that correspond to fragments that enclose no nucleosome, 1 nucleosome, 2 nucleosomes etc. This correlates with quality of ATAC-seq library. It ran on the .bam file before and after removing duplicates, to see how duplicates change the distribution (bias towards shorter sequence). 
+
 ```bash
 qsub Run05IdxStats_PE.sh
 qsub Run06Flagstat_Q20_PE.sh
