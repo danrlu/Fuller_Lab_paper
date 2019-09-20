@@ -5,7 +5,7 @@ Here on is after obtaining raw read counts for genes/genomic regions.
 ========================
 ### Quanlity control (QC)
 
-The things to look for including: is rRNA depletion efficient? are replicates good? is there batch effect if all experiment were done in batches?
+The things to look for include: is rRNA depletion efficient? are replicates good? is there batch effect if all experiment were done in batches?
 
 ========================
 ### To see changes of the same gene/genomic region across different conditions
