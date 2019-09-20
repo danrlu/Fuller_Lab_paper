@@ -25,7 +25,7 @@ typical option is HTSeq. It was really slow in my hands (in 2016), so instead:
     - the last step `awk -v OFS='\t' '{print $4, $5}'` is to format the output file to meet downstream input requirement that would vary from pipeline to pipeline.
 
 #### 3. DE analysis. 
-  - Once with the read count table for different samples, DE for RNA-seq/ATAC-seq/ChIP-seq/CAGE can all be done with DESeq2 or EdgeR. They are the foundation of DE analysis. They use slightly different underlying statistical models but are both widely used and accepted. For many packages that are more specialized such as DiffBind or Sleuth, DESeq2 and EdgeR are called within these packages to do the DE analysis. 
+  - Once having the read count table for different samples, DE for RNA-seq/ATAC-seq/ChIP-seq/CAGE can all be done with DESeq2 or EdgeR. They are the foundation of DE analysis. They use slightly different underlying statistical models but are both widely used and accepted. For many packages that are more specialized such as DiffBind or Sleuth, DESeq2 and EdgeR are called within these packages to do the DE analysis. 
   
   - The first step of DE is between sample normalization: https://haroldpimentel.wordpress.com/2014/12/08/in-rna-seq-2-2-between-sample-normalization/
   
@@ -33,7 +33,7 @@ typical option is HTSeq. It was really slow in my hands (in 2016), so instead:
   
   - **DE is deep water. Interpret results with caution**. For example, DESeq2 does between sample normalization assuming majority of the genes do not change between samples and therefore the (roughly) median gene stays the same. So there will be bias if vast majority of genes do change. I highly recommend reading and trying to understand the assumptions behind the statistical models. 
   
-  - Our CAGE gave really strange results after DE analysis, so I'm not sure whether DESeq2 can be used for CAGE. 
+  - Our CAGE got strange DE results, so I'm not sure whether DESeq2 can be used for CAGE. 
   
 ## To compare different genes/genomic regions in the same sample
 
