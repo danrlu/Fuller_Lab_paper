@@ -26,6 +26,10 @@ RNAseq_3.DE_pairwise_master.R
 RNAseq_DE_pairwise.Rmd
 
 
+#### 4. Normalization across all samples
+DE is done in a pair-wise way, here does normalization across all samples. Input information is in: sampleTable_RNA_all.txt
+
+RNAseq_4.normalize_counts_all.Rmd
 
 ============== 
 Session Info see output .html
