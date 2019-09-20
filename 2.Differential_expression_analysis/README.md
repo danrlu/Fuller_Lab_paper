@@ -1,5 +1,6 @@
 ## Differential expression (DE) analysis for RNA-seq, ATAC-seq, ChIP-seq and CAGE
 
+
 ## To see changes of the same gene/genomic region across different conditions
 
 The input files for all DE anlaysis is **read counts for genomic regions** for each sample. 
@@ -14,7 +15,7 @@ The input files for all DE anlaysis is **read counts for genomic regions** for e
     - The more samples there are, the wider the merged peaks tend to be. 
     - Alternatively for ATAC-seq, a region of defined width can be used, such as +/- X bp from the gene TSS or +/- X bp from the peak summits. I usually try different ways and see whether the conclusions stay the same.
     
-- For CAGE, the regions are TSS clusters built and then combined by CAGEr to become consensus clusters.
+- For CAGE, the regions are TSS clusters built and then combined by CAGEr to become consensus clusters. 
   
 #### 2. To count reads in each region 
 typical option is HTSeq. It was really slow in my hands (in 2016), so instead:
@@ -33,8 +34,10 @@ typical option is HTSeq. It was really slow in my hands (in 2016), so instead:
   
   - **DE is deep water. Interpret results with caution**. For example, DESeq2 does between sample normalization assuming majority of the genes do not change between samples and therefore the (roughly) median gene stays the same. So there will be bias if vast majority of genes do change. I highly recommend reading and trying to understand the assumptions behind the statistical models. 
   
-  - Our CAGE got strange DE results, so I'm not sure whether DESeq2 can be used for CAGE. 
+  - Our CAGE got strange DE results, so I'm not sure whether DESeq2 can be used for CAGE. Comparing to RNA-seq, there are very few genes that are significantly downregulated. It's possible the statistics for DESeq2 is more optimized for RNA-seq. 
   
+  
+========================  
 ## To compare different genes/genomic regions in the same sample
 
   - RNA-seq: when comparing expression level of different genes in the same sample, one needs to consider the length of gene/transcript (longer genes will have more reads than shorter ones expressed at the same level). The complication is that one gene may have several isoforms, and therefore the 'length of gene' is not straightforward to calculate. I tend to use transcript-level analysis if comparing levels of different genes with Kallisto which returns TPM and makes life a lot easier. More on within sample normalization: https://haroldpimentel.wordpress.com/2014/05/08/what-the-fpkm-a-review-rna-seq-expression-units/
