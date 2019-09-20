@@ -7,7 +7,7 @@ RNAseq_0.convert_gtf_to_bed_get_rDNA_mito.Rmd
 
 
 #### 1. separate reads from rRNA and mitochondria. 
-We did this step to (1) count how many reads were rRNA and from mitochondria, to see whether library prep was good quality. (2) remove these reads from downstream analysis, so they don't biase normalization. 
+We did this step to (1) count how many reads were rRNA and from mitochondria, to see whether library prep was good quality. (2) remove these reads from downstream analysis, so they don't biase normalization. As germ cells differentiate, their rRNA and mitochondria content change very dramatically.
 
 RNAseq_1.remove_rRNA_mito_reads.Rmd
 
