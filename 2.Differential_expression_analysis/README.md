@@ -1,7 +1,7 @@
 ## Differential expression (DE) analysis for RNA-seq, ATAC-seq, ChIP-seq and CAGE
 
-
-## To see changes of the same gene/genomic region across different conditions
+========================
+### To see changes of the same gene/genomic region across different conditions
 
 The input files for all DE anlaysis is **read counts for genomic regions** for each sample. 
 
@@ -38,7 +38,7 @@ typical option is HTSeq. It was really slow in my hands (in 2016), so instead:
   
   
 ========================  
-## To compare different genes/genomic regions in the same sample
+### To compare different genes/genomic regions in the same sample
 
   - RNA-seq: when comparing expression level of different genes in the same sample, one needs to consider the length of gene/transcript (longer genes will have more reads than shorter ones expressed at the same level). The complication is that one gene may have several isoforms, and therefore the 'length of gene' is not straightforward to calculate. I tend to use transcript-level analysis if comparing levels of different genes with Kallisto which returns TPM and makes life a lot easier. More on within sample normalization: https://haroldpimentel.wordpress.com/2014/05/08/what-the-fpkm-a-review-rna-seq-expression-units/
 
