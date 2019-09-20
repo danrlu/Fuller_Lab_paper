@@ -28,4 +28,4 @@ RNAseq_DE_pairwise.Rmd
 
 
 ============== 
-Session Info see .html outputs
+Session Info see output .html
