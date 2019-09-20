@@ -1,6 +1,8 @@
 # Scripts for the paper from D. Lu, H. Sin, C. Lu and M. T. Fuller.
 
-**1.sequencing_data_processing** includes scripts that process raw sequencing data (RNA-seq, ATAC-seq, CAGE) to (a) files for viewing in genomic browser (b) read counts (normalized and differential expression) to downstream analysis
+**1.sequencing_data_processing** includes scripts that process raw sequencing data (RNA-seq, ATAC-seq, CAGE) to (a) files for viewing in genomic browser, and (b) read counts (normalized and differential expression) to downstream analysis.
+
+  - There are places for improvement (mostly, in several steps unzipping/writing out intermediate files was not necessary), and our high performance computing cluster upgraded from SGE to SLURM somewhere in the middle of analysis so it's a mix of job script format. I'm keeping them as they are for record keeping. 
 
 **2.data_integrative_analysis** includes scripts that integrates all available data to define gene groups. 
 
