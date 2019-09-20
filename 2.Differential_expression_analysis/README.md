@@ -1,5 +1,12 @@
 ## Differential expression (DE) analysis for RNA-seq, ATAC-seq, ChIP-seq and CAGE
 
+Here on is after obtaining raw read counts for genes/genomic regions. 
+
+========================
+### Quanlity control (QC)
+
+The things to look for including: is rRNA depletion efficient? are replicates good? is there batch effect if all experiment were done in batches?
+
 ========================
 ### To see changes of the same gene/genomic region across different conditions
 
@@ -30,7 +37,7 @@ typical option is HTSeq. It was really slow in my hands (in 2016), so instead:
   
   - The first step of DE is between sample normalization: https://haroldpimentel.wordpress.com/2014/12/08/in-rna-seq-2-2-between-sample-normalization/
   
-  - After normalization, the DE package try to figure out whether the difference in gene expression (or chromatin openness etc) across different conditions are more significant than random fluctuations in gene expression and/or measurement. **Biological replicates are a must**, they are where random fluctuations in gene expression and/or measurement is estimated based on. The only time one may get away without replicates is for time course experiment to do spline fit to see trends.
+  - After normalization, the DE package try to figure out whether the difference in gene expression (or chromatin openness etc) across different conditions are more significant than random fluctuations in gene expression and/or measurement. **Biological replicates are a must**, they are where random fluctuations in gene expression and/or measurement is estimated based on. 
   
   - **DE is deep water. Interpret results with caution**. For example, DESeq2 does between sample normalization assuming majority of the genes do not change between samples and therefore the (roughly) median gene stays the same. So there will be bias if vast majority of genes do change. I highly recommend reading and trying to understand the assumptions behind the statistical models. 
   
