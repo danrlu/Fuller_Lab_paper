@@ -64,9 +64,17 @@ This is preparation for the next step.
 #### 6.2 use the consensus TSS clusters built by CAGEr, and the adjusted .bed file from Run06 to count TSS expression level for each consensus TSS cluster.
 `sbatch Run14Bedtools_coverage_array.sh`
 
+<br>
+
+#### 7. create strand specific .bigwig for genomic viewer
+The input is the .bed file containing entire reads from Run06_B2B_adjBed.sh. Here use bedtools to only keep 1bp at the 5' of reads, then convert to .bedgraph normalizing with totla read counts, then cover to .bw
+`Run08Bed2BW_gCov_fw.sh`
+`Run08Bed2BW_gCov_rv.sh'
+
+<br>
 
 ===================
-last used on SLURM 8/10/2018
+last used on SLURM 8/10/2018-3/5/2019
 
 Trim Galore version: 0.4.4_dev
 
@@ -81,5 +89,7 @@ bedtools/2.27.1
 gcc/5.2.0
 
 python/2.7
+
+ucsc_tools/377
 
 R/3.4.4 (CAGEr and related package versions see "Session_info.txt")
