@@ -56,7 +56,8 @@ qsub Run07merge_adj.bed.sh
 ```
 
 
-7.2 convert .bed to .bedgraph which is needed to convert to .bigwig for genomic viewer viewing. during conversion to .bedgraph, each library is normalized by total read counts. Note the reads at this step is filtered by deplicate, MAPQ and on main chromasomes. 
+#### 7.2 create .bigwig
+convert .bed to .bedgraph which is needed to convert to .bigwig for genomic viewer viewing. during conversion to .bedgraph, each library is normalized by total read counts. Note the reads at this step is filtered by deplicate, MAPQ and on main chromasomes. 
 ```bash
 qsub Run07BedtoBGraphtoBW_Q20.sh
 ```
