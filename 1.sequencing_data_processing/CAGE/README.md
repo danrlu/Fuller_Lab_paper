@@ -9,6 +9,7 @@ Note there is **no PCR amplification step**
 
 #### 1. index the genome. 
 CAGEr uses BSgenome.Dmelanogaster.UCSC.dm6, so did the mapping to UCSC genome, which required a different index. 
+
 `sbatch Run00Index.sh`
 
 #### 2. trim off low quality bases
@@ -20,6 +21,7 @@ CAGEr uses BSgenome.Dmelanogaster.UCSC.dm6, so did the mapping to UCSC genome, w
 
 #### 4. filter and index
 Filter the .bam file to only include uniquely mapped reads and reads on the main chromosomes, then index the filtered .bam file
+
 `sbatch Run04Index_Stats_corrected.sh`
 
 <br>
@@ -68,7 +70,9 @@ This is preparation for the next step.
 
 #### 7. create strand specific .bigwig for genomic viewer
 The input is the .bed file containing entire reads from Run06_B2B_adjBed.sh. Here use bedtools to only keep 1bp at the 5' of reads, then convert to .bedgraph normalizing with totla read counts, then cover to .bw
+
 `Run08Bed2BW_gCov_fw.sh`
+
 `Run08Bed2BW_gCov_rv.sh`
 
 <br>
