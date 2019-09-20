@@ -4,8 +4,6 @@
 
 ### **Raw sequencing data .fastq -> read counts for downstream analysis**
 
-There are places for improvement (mostly, in several steps unzipping/writing out intermediate files was not necessary), and our high performance computing cluster upgraded from SGE to SLURM somewhere in the middle of analysis so it's a mix of job script format. I'm keeping them as they are for record keeping. 
-
 #### A few notes:
 - Put all .fastq files and the scripts into the same folder unless otherwise noted.
 - Make sure to change the related parameters before running, especially number of jobs for array jobs. One can also supply these parameters while submitting the job, but having them within the scripts keeps a record.
