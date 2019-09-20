@@ -1,10 +1,10 @@
 # Scripts for the paper from D. Lu, H. Sin, C. Lu and M. T. Fuller.
 
-  - I'm trying to have all the scripts here to reproduce the data analysis. 
+  - I'm trying to have all the scripts here to reproduce the data analysis. I'm keeping them as they are for record keeping, despite the following caveats:
 
-  - There are places for improvement (mostly, in several steps unzipping/writing out intermediate files was not necessary), and 
+  - ... in several steps unzipping/writing out intermediate files was not necessary....
   
-  - Our high performance computing cluster upgraded from SGE to SLURM somewhere in the middle of analysis so it's a mix of job script format. I'm keeping them as they are for record keeping. 
+  - ... our high performance computing cluster upgraded from SGE to SLURM somewhere in the middle of analysis so it's a mix of job script format.  
   
 **1.sequencing_data_processing** includes scripts that process raw sequencing data (RNA-seq, ATAC-seq, CAGE) to (a) files for viewing in genomic browser, and (b) raw read counts to downstream analysis.
 
