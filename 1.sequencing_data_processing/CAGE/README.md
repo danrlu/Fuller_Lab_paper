@@ -69,7 +69,7 @@ This is preparation for the next step.
 #### 7. create strand specific .bigwig for genomic viewer
 The input is the .bed file containing entire reads from Run06_B2B_adjBed.sh. Here use bedtools to only keep 1bp at the 5' of reads, then convert to .bedgraph normalizing with totla read counts, then cover to .bw
 `Run08Bed2BW_gCov_fw.sh`
-`Run08Bed2BW_gCov_rv.sh'
+`Run08Bed2BW_gCov_rv.sh`
 
 <br>
 
