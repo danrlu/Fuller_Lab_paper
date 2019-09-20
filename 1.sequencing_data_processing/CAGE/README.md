@@ -44,8 +44,8 @@ sbatch Run08Bed_gCov_rv.sh
 #### 5.3 run CAGEr to build TSS clusters
 `sbatch Run05CAGEr.sh`
 
-What it does:
-  
+This script calls CAGEr.R to:
+
   1) **identify all reasonably expressed TSS**. The cutoff for what is "reasonably expressed" is arbitrary. A lower cutoff will include more TSS and give bigger and more TSS clusters, and a higher cutoff will give smaller/less TSS clusters. So the cutoff probalby depends on downstream applications. For us, we want known spermatocyte-specific genes contain only spermatocyte-specific CAGE clusters, in other words, their TSS expression level in spermatogonia would be considered not expressed. 
 
   2) **for each sample, group nearby TSS into TSS clusters**. The cutoff for what is "nearby" is arbitrary. A larger distance will include further apart TSS into 1 big cluster, and a smaller distance will break this big cluster into smaller ones. Because we only consider genes with "alternative promoters" if they have a new cluster in spermatocyte sample, so we want smaller clusters. 
