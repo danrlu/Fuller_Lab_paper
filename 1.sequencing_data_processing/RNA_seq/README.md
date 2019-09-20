@@ -52,6 +52,7 @@ Run06BamtoBW.sh
 ```
 
 
+#### dependency job
 The whole list of scripts can be submitted as dependency jobs in one go (remember to replace Y with a number):
 ```bash
 qsub Run01FastQC.sh
