@@ -24,8 +24,9 @@ Filter the .bam file to only include uniquely mapped reads and reads on the main
 
 
 #### 5. CAGEr build clusters 
-**The version of CAGEr used is 1.20.0 with R/3.4.4**. It has a bug that when reading from .bam files, reads with splicing/indels on - strand all had misidentified 5' position (TSS), likely due to reading bam step according to CAGEr update log. The solution is to use bedtools to count numbers of TSS (5' of reads) at each genomic location, convert to ctss.txt format (see CAGEr manual) as CAGEr input.
-1.22.0 wouldn't run through, 1.24.0 generated a lot more TSS clusters on - strand than on + strand. So there were no better options than 1.20.0.
+**The version of CAGEr used is 1.20.0 with R/3.4.4**. It has a bug that when reading from .bam files, reads with splicing/indels on - strand all had misidentified 5' position (TSS), likely from the reading bam step according to CAGEr update log. The solution is to use bedtools to count numbers of TSS (5' of reads) at each genomic location, convert to ctss.txt format (see CAGEr manual) as CAGEr input.
+
+CAGEr 1.22.0 wouldn't run through, 1.24.0 generated a lot more TSS clusters on - strand than on + strand. So 1.20.0 was the best option.
 
 #### 5.1 use bedtools to count number of TSS (5' of reads) at each genomic location
 note the output from these scripts have no strand information, so had to count each strand separately
@@ -38,8 +39,17 @@ sbatch Run08Bed_gCov_rv.sh
 `sbatch Run13convert_ctss.sh`
 
 #### 5.3 run CAGEr to build TSS clusters
-
 `sbatch Run05CAGEr.sh`
+What it does:
+  
+1) **identify all reasonably expressed TSS**. The cutoff for what is "reasonably expressed" is arbitrary. A lower cutoff will include more TSS and give bigger and more TSS clusters, and a higher cutoff will give smaller/less TSS clusters. So the cutoff probalby depends on downstream applications. For us, we want known spermatocyte-specific genes contain only spermatocyte-specific CAGE clusters, in other words, their TSS expression level in spermatogonia would be considered not expressed. 
+
+2) **for each sample, group nearby TSS into TSS clusters**. The cutoff for what is "nearby" is arbitrary. A larger distance will include further apart TSS into 1 big cluster, and a smaller distance will break this big cluster into smaller ones. Because we only consider genes with "alternative promoters" if they have a new cluster in spermatocyte sample, so we want smaller clusters. 
+
+3) **combine TSS clusters from different samples into 1 set of consensus clusters**. This is for comparing CAGE expression level across different samples. See notes on 2.Differential_expression_analysis.
+
+4) **score shifts within TSS clusters**. Within a consensus cluster, a shift score can be calculated to quantify the different usage of TSS between samples. The result was not used for the paper. The options were either building larger TSS clusters and consider the shifts within them, or building smaller TSS clusters and not consider the shifts but instead focus on the appearance of new cluster, and we sticked with the latter one.
+
 
 
 #### 6. count reads in TSS clusters
