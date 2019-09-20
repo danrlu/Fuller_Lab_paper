@@ -1,4 +1,5 @@
 # Scripts for the paper from D. Lu, H. Sin, C. Lu and M. T. Fuller.
+# == tutorials on how to reproduce the data analysis from the paper
 
   - I'm trying to have all the scripts here to reproduce the data analysis. I'm keeping them as they are for record keeping, despite the following caveats:
 
