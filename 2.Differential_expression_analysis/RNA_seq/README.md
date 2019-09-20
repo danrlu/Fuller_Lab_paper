@@ -1,4 +1,4 @@
-## DE for RNA-seq
+## QC and DE for RNA-seq
 
 #### 0.obtain ID for rRNA and mitochondria genes, write out in .bed format.
 For preparation for the next step.
