@@ -3,7 +3,7 @@
 
   - I'm trying to have all the scripts here to reproduce the data analysis. I'm keeping them as they are for record keeping, despite the following caveats:
 
-  - ... in several steps unzipping/writing out intermediate files was not necessary....
+  - ... in several steps unzipping/writing out intermediate files was not necessary. I did it to make sure the intermediates were what I thought they were, but they consumes storage space.
   
   - ... our high performance computing cluster upgraded from SGE to SLURM somewhere in the middle of analysis so it's a mix of job script format.  
   
