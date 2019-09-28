@@ -34,5 +34,5 @@ Input1=${name_list[$SLURM_ARRAY_TASK_ID]} # don't change this line
 #####################
 
 
-trim_galore --quality 20 --stringency 1 --three_prime_clip_R2 2 $Input1 $Input2 --length 30 --output_dir trim_SE/
+trim_galore --quality 20 --stringency 1 --three_prime_clip_R2 2 $Input1 --length 30 --output_dir trim_SE/
 
