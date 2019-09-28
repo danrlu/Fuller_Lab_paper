@@ -8,7 +8,8 @@ Go to Ensembl ftp:
 ftp://ftp.ensembl.org/pub/
 
 in the current_fasta and current_gtf folder, look for the right species
-- Regardless of downstream applications, always use ALL the avaialable sequence with no masks (\*.dna.toplevel\*.fa) for mapping. During read mapping, if the aligner could not map a read to the genome due to the corresponding sequence being masked, it will try to find somewhere else to map it to.
+- Regardless of downstream applications, always use ALL the avaialable sequence with no masks for mapping. During read mapping, if the aligner could not map a read to the genome due to the corresponding sequence being masked, it will try to find somewhere else to map it to. 
+- For fly, I use \*.dna.toplevel\*.fa, but for mammals that contains all patches and alt contigs and will be too big (at least STAR will not be able to index them...). Use \*.dna_primary.assembly\*.fa
 - DNA sequence is the same from all databases, the chromosome names and annotation varies. So always **use sequence and annotation from the same source** so the chromosome names match. Ensembl is well-organized so I stick with it.
 - The annotation file is usually only needed for counting reads per gene, which STAR does on the fly while mapping. It takes both .gtf and .gff3
 
