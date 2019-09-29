@@ -18,16 +18,3 @@ do
 	bamCoverage -b $Input -o $Output --extendReads 300 --normalizeUsing CPM --binSize 1 -p 8
 done
 
-
-for Input in AlyHA-*.Q20.chr.bam
-do
-	Output=`echo $Input | sed 's/.bam/.bin1.bw/'`
-	bamCoverage -b $Input -o $Output --extendReads 300 --normalizeUsing CPM --binSize 1 -p 8
-done
-
-
-# for Input in kmg01*_sorted.bam
-# do
-# 	Output=`echo $Input | sed 's/.bam/.bin1.bw/'`
-# 	bamCoverage -b $Input -o $Output --extendReads --normalizeUsing CPM --binSize 1 -p 8
-# done
