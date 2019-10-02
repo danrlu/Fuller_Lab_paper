@@ -11,6 +11,9 @@
 
 **2.Differential_experssion_analysis** includes scripts that normalize read counts across samples and do differential expression.
 
+
+============= sections below waiting for final version of paper ==================
+
 **3.data_integrative_analysis** includes scripts that integrates all available data to define gene groups. 
 
 **4.sequencing_data_heatmap** includes scripts that takes processed sequencing data in 1.a and gene groups from 2. to plot genomic heatmaps with deepTools
