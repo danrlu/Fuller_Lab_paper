@@ -1,0 +1,220 @@
+---
+title: "Scatter plot spcyt and spgn genes"
+author: "Dan Lu"
+date: "1/2/19"
+output: html_document
+---
+
+
+```{r}
+suppressMessages(library(tidyverse))
+suppressMessages(library(magrittr))
+library(gridExtra)
+
+options(tibble.width = Inf)
+options(scipen=999)
+
+source("~/Dropbox/coding/R/my_package/genomicsDL/R/get_TSS.r")
+source("~/Dropbox/coding/R/my_package/genomicsDL/R/get_TES.r")
+source("0_color.r")
+```
+
+
+## load rlog for both RNA and CAGE, together with gene ID and consensus cluster ID
+```{r}
+rlog_all <- read.delim("BDGP6_coding_up500_5utr_CDS_RNA_CAGE_rlog.txt", stringsAsFactors=FALSE) # each gene has multiple CAGE intersection rows
+
+sum(is.na(rlog_all$bam_RNA))
+names(rlog_all)
+
+```
+
+# load spgn, spcyt genes
+```{r}
+filename_list=list.files(pattern = '.*_ID_cc.txt')  # start with list_, .* is wild card
+filename_list=filename_list[filename_list!="spcyt_g2_ID_cc.txt"]
+# "." means anything. To mean a period, use "\\."
+# "^" means beginning of a string, "$" means end of it
+# * should be a quantifier, . is the wildcard
+print(filename_list)
+file_list <- lapply(filename_list, read.delim, header = F, stringsAsFactors=FALSE)
+
+rlog_list = lapply(file_list, function(x) semi_join(rlog_all, select(x,V1,V2),by=c("X"="V1","V10"="V2"))) # match by gene id and consensus cluster id
+
+names(rlog_list) <- stringr::str_replace(filename_list, pattern = "_ID_cc.txt", replacement = "")
+
+names(rlog_list)
+
+```
+
+# plot RNA
+```{r}
+plot_range=c(-0.5,18)
+```
+
+
+
+```{r}
+rlog_all2 <- unique(select(rlog_all, X:Aly_RNA))
+
+rlog_group2 = rlog_list %>%
+  bind_rows(.id = 'group') %>%
+  filter(group %in% c("spgn_Bcc_narrow", "spgn_Bcc_broad", "spcyt_g1_Hcc",
+                      "spcyt_g2_Hcc_UP", "spcyt_g2_Hcc_DOWN")) %>%
+  mutate(group = ifelse(group == "spgn_Bcc_broad", "spgn_Bcc_narrow", group),
+         group = ifelse(group == "spcyt_g2_Hcc_DOWN", "spcyt_g2_Hcc_UP", group)) %>%
+  mutate(group = factor(group, levels = c("spgn_Bcc_narrow", "spcyt_g1_Hcc",
+                                          "spcyt_g2_Hcc_UP"))) %>%
+  select(bam_RNA, HS72_RNA, group) %>%
+  unique() 
+
+
+# plot data and save as raster
+rlog_group2 %>%
+  ggplot(aes(bam_RNA, HS72_RNA, color = group)) +
+    geom_point(data = rlog_all2, alpha = 4/10, size = 0.4, color="grey42") +
+    geom_point(alpha = 4/10, size = 0.4) +
+  geom_abline(slop=1, intercept = 0, size=0.1, color="black") +
+    facet_wrap(~group) +
+    scale_color_manual(values = c(Bcc_gene_color, Hcc_g1_color, both_g2_color)) +
+    xlab("log2(RNA in bam-/-)") +
+    ylab("log2(RNA in HS72hr)") +
+    coord_fixed(ratio=1) +
+    xlim(plot_range) + 
+    ylim(plot_range) +
+    theme_light() +
+    theme(strip.background = element_blank(), 
+          strip.text.x = element_blank(),
+          panel.margin = unit(0, "lines"), 
+          legend.position = "none",
+          text = element_text(color = "transparent"), #transparent text
+          axis.text = element_text(color = "transparent"),  
+          rect = element_rect(fill = "transparent", colour = NA), 
+          plot.background = element_rect(fill = "transparent",colour = NA))
+
+ggsave("plot_bam-HS72 RNA all genes_data.png", bg = "transparent")
+
+
+# plot text label and save as vector
+rlog_group2 %>%
+  ggplot(aes(bam_RNA, HS72_RNA, color = group)) +
+  #  geom_point(data = rlog_all2, alpha = 4/10, size = 0.4, color="grey42") +
+ #   geom_point(alpha = 4/10, size = 0.4) +
+    facet_wrap(~group) +
+ #   scale_color_manual(values = c(Bcc_gene_color, Hcc_g1_color, both_g2_color)) +
+    xlab("log2(RNA in bam-/-)") +
+    ylab("log2(RNA in HS72hr)") +
+    coord_fixed(ratio=1) +
+    xlim(plot_range) + 
+    ylim(plot_range) +
+    theme_light() +
+    theme(strip.background = element_blank(), 
+          strip.text.x = element_blank(),
+          panel.margin = unit(0, "lines"), 
+          legend.position = "none", 
+          #line = element_blank(), #remove all line object
+          #axis.ticks = element_blank(),
+          #make all rectangles (plot and panel background) transparent
+          #rect = element_rect(fill = "transparent", colour = NA),
+          panel.background = element_rect(fill = "transparent",colour = NA), # or element_blank()
+          panel.grid.minor = element_blank(), 
+          panel.grid.major = element_blank(),
+          plot.background = element_rect(fill = "transparent",colour = NA))
+        
+
+ggsave("plot_bam-HS72 RNA all genes_label.pdf", bg = "transparent")
+```
+
+# plot CAGE
+```{r}
+plot_range=c(-3,19.5)
+```
+
+
+```{r}
+rlog_all3 <- (select(rlog_all, V10:HS72_CAGE))
+
+rlog_group3 = rlog_list %>%
+  bind_rows(.id = 'group') %>%
+  filter(group %in% c("spgn_Bcc_narrow", "spgn_Bcc_broad", "spcyt_g1_Hcc",
+                      "spcyt_g2_Hcc_UP", "spcyt_g2_Hcc_DOWN","spcyt_g2_Bcc_DOWN", "spcyt_g2_Bcc_UP")) %>%
+  mutate(group = ifelse(group == "spgn_Bcc_broad", "spgn_Bcc_narrow", group),
+         group = ifelse(group == "spcyt_g2_Hcc_UP", "spcyt_g2", group), group = ifelse(group == "spcyt_g2_Hcc_DOWN", "spcyt_g2",  group), group = ifelse(group == "spcyt_g2_Bcc_UP", "spcyt_g2", group), group = ifelse(group == "spcyt_g2_Bcc_DOWN", "spcyt_g2", group)) %>% 
+  mutate(group = factor(group, levels = c("spgn_Bcc_narrow", "spcyt_g1_Hcc",
+                                          "spcyt_g2"))) %>%
+  select(bam_CAGE, HS72_CAGE, group) 
+
+# make a plot with data plot, save as raster
+rlog_group3%>%
+  ggplot(aes(bam_CAGE, HS72_CAGE, color = group)) +
+    geom_point(data = rlog_all3, alpha = 4/10, size = 0.5, color="grey42") +
+    geom_point(alpha = 4/10, size = 0.5) +
+    geom_abline(slop=1, intercept = 0, size=0.1, color="black") +
+    facet_wrap(~group) +
+    scale_color_manual(values = c(Bcc_gene_color, Hcc_g1_color, both_g2_color,both_g2_color)) +
+    xlab("log2(CAGE in bam-/-)") +
+    ylab("log2(CAGE in HS72hr)") +
+    coord_fixed(ratio=1) +
+    xlim(plot_range) + 
+    ylim(plot_range) +
+    theme_light() +
+    theme(strip.background = element_blank(), 
+          strip.text.x = element_blank(),
+          panel.margin = unit(0, "lines"), 
+          legend.position = "none",
+          text = element_text(color = "transparent"), #transparent text
+          axis.text = element_text(color = "transparent"),  
+          #rect = element_rect(fill = "transparent", colour = NA), 
+          plot.background = element_rect(fill = "transparent",colour = NA))
+
+ggsave("plot_bam-HS72 CAGE all genes_data.png", bg = "transparent")
+
+
+# make a plot with text label, save as vector
+rlog_group3 %>%
+  ggplot(aes(bam_CAGE, HS72_CAGE, color = group)) +
+ #   geom_point(data = rlog_all3, alpha = 4/10, size = 0.5, color="grey42") +
+ #   geom_point(alpha = 4/10, size = 0.5) +
+    facet_wrap(~group) +
+  #  scale_color_manual(values = c(Bcc_gene_color, Hcc_g1_color, both_g2_color,both_g2_color)) +
+    xlab("log2(CAGE in bam-/-)") +
+    ylab("log2(CAGE in HS72hr)") +
+    coord_fixed(ratio=1) +
+    xlim(plot_range) + 
+    ylim(plot_range) +
+    theme_light() +
+    theme(strip.background = element_blank(), 
+          strip.text.x = element_blank(),
+          panel.margin = unit(0, "lines"), 
+          legend.position = "none", 
+          #line = element_blank(), #remove all line object
+          #axis.ticks = element_blank(),
+          #make all rectangles (plot and panel background) transparent
+          #rect = element_rect(fill = "transparent", colour = NA),
+          panel.background = element_rect(fill = "transparent",colour = NA), # or element_blank()
+          panel.grid.minor = element_blank(), 
+          panel.grid.major = element_blank(),
+          plot.background = element_rect(fill = "transparent",colour = NA))
+
+ggsave("plot_bam-HS72 CAGE all genes_label.pdf", bg = "transparent")
+```
+
+### regarding the warning: Removed 735 rows containing missing values (geom_point)
+they are in rlog_all, due to the merge step, a full join back to CAGE_r that kept clusters that are expressed but overlap non-expressed genes which exist in BDGP6_up500 but not in RNA_rlog. Fixed.
+```{r}
+n=filter(rlog_all3, is.na(bam_CAGE))
+nrow(n)
+
+n2=filter(rlog_all3, is.na(HS72_CAGE))
+nrow(n2)
+
+head(n)
+```
+
+
+```{r}
+
+sessionInfo()
+
+```
+

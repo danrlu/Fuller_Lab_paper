@@ -1,0 +1,102 @@
+---
+title: "Scatter plot to decide cutoff for off-on genes using RNAseq and CAGE"
+author: "Dan Lu"
+date: "Oct 17, 2018"
+output: html_document
+---
+
+Using RNA rlog normalized counts, and CAGE rlog normalized (only consensus clusters that fall within up500 and exons of genes):
+<br>
+See how log2FC of RNA and CAGE correlate. **Use RNA HS48 vs bam log2FC > 3, RNA HS72 vs bam log2FC > 4, and CAGE HS72 vs bam log2FC > 4**
+
+```{r}
+suppressMessages(library(tidyverse))
+suppressMessages(library(magrittr))
+library(plotly)
+
+options(tibble.width = Inf)
+options(scipen=999)
+
+source("~/Dropbox/coding/R/my_package/genomicsDL/R/get_TSS.r")
+```
+
+
+## load RNA gene_id to CAGE consensus cluster conversion
+```{r}
+BDGP6_coding_up500_5utr_CDS_intersect_consensusCluster <- read.delim("BDGP6_coding_up500_5utr_CDS_intersect_consensusCluster_0.4ol.txt", header=FALSE, stringsAsFactors=FALSE)
+
+```
+
+
+# HS48 vs bam
+## load RNA DE HS72 vs bam
+```{r}
+DE_RNA <- read.delim("DE_HS48vsBam_RNA_results_all.txt", stringsAsFactors=FALSE)
+
+DE_CAGE <- read.delim("DE_results_all_CAGE_BH_up500_5utr_CDS.txt", stringsAsFactors=FALSE)
+```
+
+
+## merge RNA and CAGE DE results
+```{r}
+DE_c = inner_join(DE_RNA, BDGP6_coding_up500_5utr_CDS_intersect_consensusCluster, by=c("X"="V4")) %>% inner_join(DE_CAGE, by=c("V10"="X"))
+
+names(DE_c)
+```
+
+
+## plot log2FC
+```{r}
+ggplot(DE_c, aes(log2FoldChange.x, log2FoldChange.y)) +
+    geom_point(alpha = 3/10, size = 0.3, color="grey42") +
+    xlab("RNA HS48 vs bam log2FC") + xlim(-7.5,17.5) + ylim(-7.5,17.5) +
+    ylab("CAGE HS72 vs bam log2FC") +
+    coord_fixed(ratio=1) +
+    ggtitle("all transcripts") + geom_abline(intercept = 0, slope = 1, color='red') + geom_vline(xintercept = 3, color="blue") + geom_hline(yintercept = 4, color="blue") +  theme(plot.title = element_text(hjust = 0.5))  + theme_light()
+
+```
+
+
+# HS72 vs bam
+## load RNA DE HS72 vs bam
+```{r}
+DE_RNA <- read.delim("DE_HS72vsBam_RNA_results_all.txt", stringsAsFactors=FALSE)
+```
+
+
+## merge RNA and CAGE DE resulsts
+```{r}
+DE_c = inner_join(DE_RNA, BDGP6_coding_up500_5utr_CDS_intersect_consensusCluster, by=c("X"="V4")) %>% inner_join(DE_CAGE, by=c("V10"="X"))
+
+names(DE_c)
+```
+
+
+## plot log2FC
+```{r}
+ggplot(DE_c, aes(log2FoldChange.x, log2FoldChange.y)) +
+    geom_point(alpha = 3/10, size = 0.3, color="grey42") +
+    xlab("RNA HS72 vs bam log2FC") + xlim(-7.5,17.5) + ylim(-7.5,17.5) +
+    ylab("CAGE HS72 vs bam log2FC") +
+    coord_fixed(ratio=1) +
+    ggtitle("all transcripts") + geom_abline(intercept = 0, slope = 1, color='red') + geom_vline(xintercept = 4, color="blue") + geom_hline(yintercept = 4, color="blue") +
+    theme(plot.title = element_text(hjust = 0.5))  + theme_light()
+
+```
+## what is that small blob on the bottom? RNA on but CAGE very off in HS72 (probably will not have a H cluster)
+**Probably the accessory gland contatmiation genes**
+```{r}
+a=filter(DE_c, log2FoldChange.x > 4 & log2FoldChange.y < -1) %>% select(X) %>% unique() # have some duplicate gene names
+
+nrow(a)
+
+accessory_gland_Hosu <- read.table("~/Dropbox/z-seq analysis/17-1227 Hosu RNAseq/4. transcriptome/bam_HS72_gtf/accessory_gland_Hosu.txt", quote="\"", comment.char="", stringsAsFactors=FALSE) %>% rename(X=V1)
+nrow(accessory_gland_Hosu)
+
+nrow(inner_join(a,accessory_gland_Hosu))
+```
+
+
+```{r}
+sessionInfo()
+```

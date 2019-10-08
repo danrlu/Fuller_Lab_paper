@@ -1,0 +1,151 @@
+---
+title: "Convert domTSS1bp to TSS cluster interquantile range"
+author: "Dan Lu"
+date: "2/19/19"
+output:  html_document
+---
+
+```{r message=F, warning=F, echo=F}
+library(tidyverse)
+library(magrittr)
+#library(gridExtra)
+
+options(tibble.width = Inf)
+options(scipen=999)
+
+```
+
+
+
+### spgn
+```{r fig.width=4, fig.height=3}
+clusterTSS_bam <- read.delim("~/Dropbox/z-seq analysis/18-0702 CAGE/14.redo_Q255_filter/clusterTSS_bam.txt", stringsAsFactors=FALSE)
+
+
+filename_list = list.files(pattern = '^sp.*Bcc.*\\unq_domTSS1bp_srt_width_cc.bed')
+
+print(filename_list)
+
+file_list <- lapply(filename_list, read.delim, header = F, stringsAsFactors=FALSE)
+#names(file_list) <- stringr::str_replace(filename_list, pattern = "spcyt_", replacement = "TSScluster_spcyt_")
+
+
+
+join_join <- function(i) {
+  
+  file_list[[i]]$V1b=paste0("chr",file_list[[i]]$V1)
+  
+  file_list[[i]]$order=seq(1:nrow(file_list[[i]])) # create a row to record the sorting order
+  
+  
+  all=inner_join(file_list[[i]], clusterTSS_bam, by=c("V1b"="chr","V3"="dominant_ctss")) %>% mutate(q_0.1bed = q_0.1-1 ) %>% select(V1,q_0.1bed , q_0.9, V4, V5, V6, order) 
+  
+  all_fw=filter(all, V6=="+") # need to split by strand to calculate up/down edge of tss cluster
+  all_rv=filter(all, V6=="-")
+  
+  up_edge_fw=mutate(all_fw, q_0.9=q_0.1bed+1)
+  up_edge_rv=mutate(all_rv, q_0.1bed=q_0.9-1)
+  up_edge=bind_rows(up_edge_fw, up_edge_rv) %>% arrange(order) %>% select(-order)
+  
+  
+  down_edge_fw=mutate(all_fw, q_0.1bed=q_0.9-1)
+  down_edge_rv=mutate(all_rv, q_0.9=q_0.1bed+1)
+  down_edge=bind_rows(down_edge_fw, down_edge_rv) %>% arrange(order) %>% select(-order)
+  
+  write.table(up_edge, paste0("intq_upedge_",filename_list[[i]]), quote=F, sep="\t", col.names = F, row.names = F)
+  
+  write.table(down_edge, paste0("intq_downedge_",filename_list[[i]]), quote=F, sep="\t", col.names = F, row.names = F)
+  
+  #####################
+  
+  all=inner_join(file_list[[i]], clusterTSS_bam, by=c("V1b"="chr","V3"="dominant_ctss")) %>% select(V1,q_0.1, q_0.9, V4, V5, V6, order) 
+  
+  
+  mid=mutate(all, end=as.integer((q_0.9+q_0.1)/2)) %>% mutate(start=end-1) %>% arrange(order) %>% select(V1, start, end, V4, V5, V6, -order)
+  
+  
+  write.table(mid, paste0("intq_middle_",filename_list[[i]]), quote=F, sep="\t", col.names = F, row.names = F)
+  
+}
+
+lapply(seq_along(file_list), join_join)
+
+```
+
+
+
+
+### spcyt
+```{r fig.width=4, fig.height=3}
+clusterTSS_HS72 <- read.delim("~/Dropbox/z-seq analysis/18-0702 CAGE/14.redo_Q255_filter/clusterTSS_HS72.txt", stringsAsFactors=FALSE)
+
+
+filename_list = list.files(pattern = '^sp.*Hcc.*\\unq_domTSS1bp_srt_width_cc.bed')
+
+print(filename_list)
+
+file_list <- lapply(filename_list, read.delim, header = F, stringsAsFactors=FALSE)
+#names(file_list) <- stringr::str_replace(filename_list, pattern = "spcyt_", replacement = "TSScluster_spcyt_")
+
+
+
+join_join <- function(i) {
+  
+file_list[[i]]$V1b=paste0("chr",file_list[[i]]$V1)
+
+file_list[[i]]$order=seq(1:nrow(file_list[[i]])) # create a row to record the sorting order
+
+
+all=inner_join(file_list[[i]], clusterTSS_HS72, by=c("V1b"="chr","V3"="dominant_ctss")) %>% mutate(q_0.1bed = q_0.1-1 ) %>% select(V1,q_0.1bed , q_0.9, V4, V5, V6, order) 
+
+all_fw=filter(all, V6=="+") # need to split by strand to calculate up/down edge of tss cluster
+all_rv=filter(all, V6=="-")
+
+up_edge_fw=mutate(all_fw, q_0.9=q_0.1bed+1)
+up_edge_rv=mutate(all_rv, q_0.1bed=q_0.9-1)
+up_edge=bind_rows(up_edge_fw, up_edge_rv) %>% arrange(order) %>% select(-order)
+
+
+down_edge_fw=mutate(all_fw, q_0.1bed=q_0.9-1)
+down_edge_rv=mutate(all_rv, q_0.9=q_0.1bed+1)
+down_edge=bind_rows(down_edge_fw, down_edge_rv) %>% arrange(order) %>% select(-order)
+
+write.table(up_edge, paste0("intq_upedge_",filename_list[[i]]), quote=F, sep="\t", col.names = F, row.names = F)
+
+write.table(down_edge, paste0("intq_downedge_",filename_list[[i]]), quote=F, sep="\t", col.names = F, row.names = F)
+
+#####################
+
+all=inner_join(file_list[[i]], clusterTSS_HS72, by=c("V1b"="chr","V3"="dominant_ctss")) %>% select(V1,q_0.1, q_0.9, V4, V5, V6, order) 
+  
+
+  mid=mutate(all, end=as.integer((q_0.9+q_0.1)/2)) %>% mutate(start=end-1) %>% arrange(order) %>% select(V1, start, end, V4, V5, V6, -order)
+  
+
+  write.table(mid, paste0("intq_middle_",filename_list[[i]]), quote=F, sep="\t", col.names = F, row.names = F)
+
+}
+
+lapply(seq_along(file_list), join_join)
+ 
+```
+
+
+```{bash}
+for input in intq_*unq_domTSS1bp_srt_width_cc.bed
+do
+	output=`echo $input | sed 's/.bed/_up_down150bp.bed/'`
+
+	bedtools slop -b 150 -i $input -g ~/Dropbox/z-seq\ analysis/genome/Drosophila_melanogaster.BDGP6.dna.toplevel.fa.fai | uniq > $output
+	
+    output2=`echo $output | sed 's/.bed/.fa/'`
+    bedtools getfasta -s -fi ~/Dropbox/z-seq\ analysis/genome/Drosophila_melanogaster.BDGP6.dna.toplevel.fa -bed $output -fo $output2
+done
+```
+
+
+
+```{r}
+sessionInfo()
+```
+

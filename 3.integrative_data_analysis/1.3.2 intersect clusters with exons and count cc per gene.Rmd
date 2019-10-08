@@ -1,0 +1,99 @@
+---
+title: "Redo DE with only CAGE clusters that fall within exons"
+output: html_document
+date: "12/30/18"
+author: Dan Lu
+---
+
+**1. manually remove kmg intron**  
+<br>
+**2. Intersect the .bed file (which contains, for each gene ID, 1 row for each unique: from TSS to up500bp; 5'UTR; CDS). with consensus clusters**  
+Try require that any, or 40% of the consensus cluster fall within the exon:    
+40% should prevent double counting those genes that starts really really close to exon-intron edge of another gene, which consensus cluster will be counted into both genes
+<br>
+but cannot go higher because up500 and 1st exon are separate entries, will split most consensus clusters.
+<br>
+When intersect, will create multiple entries for each gene vs consensus cluster match.  
+<br>
+**3. do unique(select(intersect.txt, gene_id, consensuseCluster_id)) and write out to BDGP6_coding_up500_5utr_CDS_intersect_consensusCluster_IDonly**
+<br>
+
+
+```{r}
+suppressWarnings(suppressMessages(library(DESeq2)))
+suppressWarnings(suppressMessages(library(tidyverse)))
+suppressWarnings(suppressMessages(library(magrittr)))
+
+options(tibble.width = Inf)
+options(scipen=999)
+
+
+```
+
+
+
+## intersect with consensus clusters
+```{bash}
+
+bedtools intersect -wo -s -F 0.4 -a BDGP6_coding_up500_5utr_CDS.bed -b ~/Dropbox/z-seq\ analysis/18-0702\ CAGE/14.redo_Q255_filter/consensusCluster_ensembl.bed > BDGP6_coding_up500_5utr_CDS_intersect_consensusCluster_0.4ol.txt
+```
+
+
+```{r}
+forty_ol <- read.delim("BDGP6_coding_up500_5utr_CDS_intersect_consensusCluster_0.4ol.txt", header=FALSE, stringsAsFactors=FALSE) %>% select(V4,V10) %>% unique()
+
+```
+
+
+# if require 40% of cc fall within exon
+```{r}
+count_forty = forty_ol %>%  group_by(V4) %>% summarise(n=n()) 
+
+count_forty %>% ggplot(aes(n)) + geom_bar()
+
+# intersect with genes to count those that have 0 cc
+fly_nonMito_protein <- read.delim("~/Dropbox/z-seq analysis/17-1227 Hosu RNAseq/3. DE/fly_nonMito_protein.bed", header=FALSE, stringsAsFactors=FALSE) %>% select(V4) %>% left_join(count_forty) %>%  mutate(n = ifelse(is.na(n), 0, n)) 
+
+fly_nonMito_protein %>% ggplot(aes(n)) + geom_bar()
+
+table(fly_nonMito_protein$n)
+```
+
+
+
+## plot scatterplot to see RNA level for different cc number
+```{r}
+rlog <- read.delim("DE_results_rlog_RNA_all.txt", header=T, stringsAsFactors=FALSE) %>% mutate(bam_RNA=(SHS.1.1.HS0hr+SHS.2.1.HS0hr)/2, HS48_RNA=(SHS.1.2.HS48hr+SHS.2.2.HS48hr)/2, HS72_RNA=(SHS.1.3.HS72hr+SHS.2.3.HS72hr)/2, Sa_RNA=(SHS.1.8.Sa+SHS.2.8.Sa)/2, Aly_RNA=(SHS.1.9.Aly+SHS.2.9.Aly)/2 )
+
+#CAGE_rlog_BHS <- read.delim("~/Dropbox/z-seq analysis/18-0702 CAGE/7. bam_hs72_sa/4.consensusClusters/2. CAGE_DE/DE_normalized_counts_rlog_BHS.txt", stringsAsFactors=FALSE)%>%  mutate(bam_CAGE = (B1 + B2) / 2, HS72_CAGE = (H1 + H2) / 2, sa_CAGE=(S1+S2)/2 ) %>% select(X,bam_CAGE, HS72_CAGE, sa_CAGE)
+
+
+#logt_c = inner_join(rlog, Rcc, by=c("X"="V4")) %>% inner_join(CAGE_rlog_BHS, by=c("V10"="X"))
+
+#names(logt_c)
+
+
+n0 = semi_join(rlog, filter(fly_nonMito_protein, n ==0), by=c("X"="V4"))
+nrow(n0)
+n1 = semi_join(rlog, filter(fly_nonMito_protein, n ==1), by=c("X"="V4"))
+nrow(n1)
+n2 = semi_join(rlog, filter(fly_nonMito_protein, n ==2), by=c("X"="V4"))
+nrow(n2)
+nmany = semi_join(rlog, filter(fly_nonMito_protein, n > 2), by=c("X"="V4"))
+nrow(nmany)
+
+ggplot(n0, aes(x=bam_RNA, y=HS72_RNA)) + geom_point(size=0.5, alpha=0.4, color="red")+ xlim(-3, 21) + ylim(-3, 21) + coord_fixed(ratio=1) + ggtitle("genes with no consensus cluster overlap")
+
+ggplot(n1, aes(x=bam_RNA, y=HS72_RNA)) + geom_point(size=0.5, alpha=0.4, color="blue") + xlim(-3, 21) + ylim(-3, 21) + coord_fixed(ratio=1)+ ggtitle("genes with 1 consensus cluster overlap")
+
+
+ggplot(n2, aes(x=bam_RNA, y=HS72_RNA)) + geom_point(size=0.5, alpha=0.4, color="orange") + xlim(-3, 21) + ylim(-3, 21) + coord_fixed(ratio=1)+ ggtitle("genes with 2 consensus cluster overlap")
+
+ggplot(nmany, aes(x=bam_RNA, y=HS72_RNA)) + geom_point(size=0.5, alpha=0.4, color="seagreen") + xlim(-3, 21) + ylim(-3, 21) + coord_fixed(ratio=1)+ ggtitle("genes with >2 consensus cluster overlap")
+```
+
+
+```{r}
+sessionInfo()
+```
+

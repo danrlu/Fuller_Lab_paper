@@ -1,0 +1,197 @@
+---
+title: "Scatter plot to decide cutoff for off-on genes using RNAseq and CAGE"
+author: "Dan Lu"
+date: "Oct 17, 2018"
+output: html_document
+---
+
+Using RNA rlog normalized counts, and CAGE rlog normalized:
+<br>
+1. In general RNA and CAGE agrees with each other. bam_RNA seems to lose resolution in lowly expressed region, where CAGE has more spread. CAGE has more sequencing depth, maybe better resolution for lowly expressed genes. 
+<br>
+2. do 3D plotting of bam_RNA, HS72_RNA and bam_CAGE to decide where to draw cutoff for off genes. In the end decided that whoever makes it to consensus cluster by tpm filter is ON. 
+
+
+```{r}
+suppressMessages(library(tidyverse))
+suppressMessages(library(magrittr))
+library(plotly)
+
+options(tibble.width = Inf)
+options(scipen=999)
+
+source("~/Dropbox/coding/R/my_package/genomicsDL/R/get_TSS.r")
+```
+
+
+```{r}
+plot_range=c(-3, 18) 
+off_cut_CAGE=4.8
+off_cut_RNA=7.5
+```
+
+
+
+## load RNA gene_id to CAGE consensus cluster conversion
+```{r}
+BDGP6_coding_200bp_intersect_consensusCluster <-read.delim("0BDGP6_coding_TSS200bp_intersect_consensusCluster.txt", header=FALSE, stringsAsFactors=FALSE) 
+
+```
+
+## load RNA rlog transformed counts, and take average 
+```{r}
+rlog <- read.delim("DE_results_rlog_RNA_all.txt", header=T, stringsAsFactors=FALSE) %>% mutate(bam_RNA=(SHS.1.1.HS0hr+SHS.2.1.HS0hr)/2, HS48_RNA=(SHS.1.2.HS48hr+SHS.2.2.HS48hr)/2, HS72_RNA=(SHS.1.3.HS72hr+SHS.2.3.HS72hr)/2, Sa_RNA=(SHS.1.8.Sa+SHS.2.8.Sa)/2, Aly_RNA=(SHS.1.9.Aly+SHS.2.9.Aly)/2 )
+```
+
+
+## take CAGE rlog transformed counts, and take average 
+```{r}
+CAGE_rlog_BH <- read.delim("DE_normalized_counts_rlog_CAGE_BH_up500_5utr_CDS.txt", stringsAsFactors=FALSE) %>%  mutate(bam_CAGE = (B1 + B2) / 2, HS72_CAGE = (H1 + H2) / 2 ) %>% select(X,bam_CAGE, HS72_CAGE)
+```
+
+## merge RNA and CAGE normalized counts
+```{r}
+logt_c = inner_join(rlog, BDGP6_coding_200bp_intersect_consensusCluster, by=c("X"="V4")) %>% inner_join(CAGE_rlog_BH, by=c("V10"="X"))
+
+names(logt_c)
+```
+
+
+
+## plot bam vs HS72
+```{r}
+ggplot(logt_c, aes(bam_RNA, HS72_RNA)) +
+      xlab("log2(bam_RNA)") + xlim(plot_range) + ylim(plot_range) +
+    ylab("log2(HS72_RNA)") +
+  coord_fixed(ratio=1) +geom_vline(xintercept = off_cut_RNA, color='red') +
+    geom_bin2d(bins = 150) + scale_fill_distiller(palette = "YlGnBu", direction = -1)
+
+
+ggplot(logt_c, aes(bam_CAGE, HS72_CAGE)) +
+      xlab("log2(bam_RNA)") + xlim(plot_range) + ylim(plot_range) +
+    ylab("log2(HS72_CAGE)") +
+  coord_fixed(ratio=1) +
+  #geom_vline(xintercept = off_cut_CAGE, color='red') +
+  #geom_hline(yintercept = off_cut_CAGE, color='red') + 
+  geom_abline(intercept = 2, slope=1, color='yellow') +
+  geom_abline(intercept = 4, slope=1, color='black') +
+    geom_bin2d(bins = 150) + scale_fill_distiller(palette = "YlGnBu", direction = -1)
+```
+
+
+## plot bam_CAGE vs bam_RNA
+```{r}
+ggplot(logt_c, aes(bam_RNA, bam_CAGE)) +
+    geom_point(alpha = 3/10, size = 0.3, color="grey42") +
+    xlab("log2(bam_RNA)") + xlim(plot_range) + ylim(plot_range) +
+    ylab("log2(bam_CAGE)") +
+    coord_fixed(ratio=1) +
+    ggtitle("all transcripts") + geom_abline(intercept = 0, slope = 1, color='red') +
+    #geom_hline(yintercept = off_cut_CAGE, color='red') +
+    theme(plot.title = element_text(hjust = 0.5))  + theme_light()
+
+
+ggplot(logt_c, aes(bam_RNA, bam_CAGE)) +
+      xlab("log2(bam_RNA)") + xlim(plot_range) + ylim(plot_range) +
+    ylab("log2(bam_CAGE)") +
+  coord_fixed(ratio=1) +geom_abline(intercept = 0, slope = 1, color='red') +
+    geom_bin2d(bins = 150) + scale_fill_distiller(palette = "YlGnBu", direction = -1)
+```
+
+
+## plot HS72_CAGE vs HS72_RNA
+```{r}
+ggplot(logt_c, aes(HS72_RNA, HS72_CAGE)) +
+    geom_point(alpha = 3/10, size = 0.3, color="grey42") +
+    xlab("log2(HS72_RNA)") + xlim(plot_range) + ylim(plot_range) +
+    ylab("log2(HS72_CAGE)") +
+    coord_fixed(ratio=1) +
+    ggtitle("all transcripts") +geom_abline(intercept = 0, slope = 1, color='red') +   
+  #geom_hline(yintercept = off_cut_CAGE, color='red') +
+    theme(plot.title = element_text(hjust = 0.5))  + theme_light()
+
+
+ggplot(logt_c, aes(HS72_RNA, HS72_CAGE)) +
+  xlab("log2(HS72_RNA)") + xlim(plot_range) + ylim(plot_range) +
+    ylab("log2(HS72_CAGE)") +
+    coord_fixed(ratio=1) +geom_abline(intercept = 0, slope = 1, color='red') +
+    geom_bin2d(bins = 150) + scale_fill_distiller(palette = "YlGnBu", direction = -1)
+```
+
+
+
+
+
+
+```{r}
+p=plot_ly(slice(logt_c,1:5000), x=~bam_RNA, y=~HS72_RNA, z=~bam_CAGE, opacity=0.5, marker=list(size=2), mode="markers", type="scatter3d") #%>% add_trace(x=c(-4,4), y=c(-4,4), z=c(-4,4), mode="lines")
+p
+```
+
+
+```{r}
+p=plot_ly(slice(logt_c,1:5000), x=~bam_RNA, y=~HS72_RNA, z=~HS72_CAGE, opacity=0.5, marker=list(size=2), mode="markers", type="scatter3d") #%>% add_trace(x=c(-4,4), y=c(-4,4), z=c(-4,4), mode="lines")
+p
+```
+
+
+## number of off genes by both RNA and CAGE
+```{r}
+bam_CAGE_off=filter(logt_c, bam_CAGE <= off_cut_CAGE) %>% select(X) %>% unique()
+nrow(bam_CAGE_off)
+
+nrow(unique(filter(logt_c, bam_CAGE <= off_cut_CAGE & bam_RNA <= off_cut_RNA)))
+```
+
+
+
+## what is this group that bam_RNA is on and not changed much in HS72, but bam_CAGE is off, which has more genes comparing to 7.DEnCAGE
+these are the alternative TSS usage ones!
+```{r}
+nrow(unique(filter(logt_c, bam_CAGE < off_cut_CAGE & bam_RNA > 10)))
+nrow(unique(select(filter(logt_c, bam_CAGE < off_cut_CAGE & bam_RNA > 10),X)))
+
+x=filter(logt_c, bam_CAGE < 0 & bam_RNA > 10 & bam_RNA < 12 & HS72_RNA >10 & HS72_RNA < 12) 
+
+x_bed=select(x,V7:V12)
+
+#write.table(x_bed,"bam_CAGE_off_RNA_on.bed", sep="\t", quote=F, row.names = F, col.names = F)
+```
+
+
+## what is this group that HS72_RNA is on but HS72_CAGE is off
+very few genes. maybe just for some reason didn't pull by cap in CAGE?
+```{r}
+nrow(unique(filter(logt_c, HS72_CAGE < 2 & HS72_RNA > off_cut_RNA)))
+nrow(unique(select(filter(logt_c, HS72_CAGE < 2 & HS72_RNA > off_cut_RNA),X)))
+
+y=filter(logt_c, HS72_CAGE < 2 & HS72_RNA > off_cut_RNA) 
+
+y_bed=select(y,V7:V12)
+
+#write.table(y_bed,"HS72_CAGE_off_RNA_on.bed", sep="\t", quote=F, row.names = F, col.names = F)
+```
+
+
+## what is the group that bam/HS72 RNA is off, CAGE is on?
+I thought that they are below detection level for RNAseq, BUT they are the multimappers that I failed to filter out of CAGE Q255.chr.bam!!!!! Fixed in this version. 
+```{r}
+nrow(unique(select(filter(logt_c, bam_RNA < 1 & bam_CAGE > off_cut_CAGE),X)))
+nrow(unique(select(filter(logt_c, HS72_RNA < 1 & HS72_CAGE > off_cut_CAGE),X)))
+
+zb=filter(logt_c, bam_RNA < 1 & bam_CAGE > off_cut_CAGE) %>% select(V7:V12)
+zh=filter(logt_c, HS72_RNA < 1 & HS72_CAGE > off_cut_CAGE)%>% select(V7:V12)
+
+nrow(unique(inner_join(select(filter(logt_c, bam_RNA < 1 & bam_CAGE > off_cut_CAGE),X), select(filter(logt_c, HS72_RNA < 1 & HS72_CAGE > off_cut_CAGE),X))))
+
+#write.table(zb, "bam_RNA_off_CAGE_on.bed", sep="\t", quote=F, row.names = F, col.names = F)
+
+#write.table(zh, "HS72_RNA_off_CAGE_on.bed", sep="\t", quote=F, row.names = F, col.names = F)
+
+```
+
+
+
+```{r}
+sessionInfo()
+```

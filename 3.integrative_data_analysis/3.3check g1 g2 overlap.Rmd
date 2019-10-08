@@ -1,0 +1,33 @@
+---
+title: ""
+author: "Dan Lu"
+date: ""
+output:  html_document
+---
+
+```{r message=F, warning=F, echo=F}
+library(tidyverse)
+library(magrittr)
+
+options(tibble.width = Inf)
+options(scipen=999)
+
+```
+
+
+```{r}
+spcyt_g1_Hcc_ID_cc <- read.delim("spcyt_g1_Hcc_ID_cc.txt", header=FALSE, stringsAsFactors=FALSE) %>% select(V2)
+
+spcyt_g2_ID_cc <- read.delim("spcyt_g2_ID_cc.txt", header=FALSE, stringsAsFactors=FALSE) %>% select(V6)
+
+overlap=inner_join(spcyt_g1_Hcc_ID_cc, spcyt_g2_ID_cc, by=c("V2"="V6"))
+
+print(overlap)
+```
+
+
+
+```{r}
+sessionInfo()
+```
+

@@ -1,0 +1,75 @@
+---
+title: "Intersect consensus cluster with domTSS"
+output: html_document
+date: "12/31/18"
+author: Dan Lu
+---
+
+
+```{r}
+suppressWarnings(suppressMessages(library(tidyverse)))
+suppressWarnings(suppressMessages(library(magrittr)))
+
+options(tibble.width = Inf)
+options(scipen=999)
+```
+
+
+## intersect consensus clusters with domTSS
+```{bash}
+bedtools intersect -wo -s -a ~/Dropbox/z-seq\ analysis/18-0702\ CAGE/14.redo_Q255_filter/consensusCluster_ensembl.bed -b ~/Dropbox/z-seq\ analysis/18-0702\ CAGE/14.redo_Q255_filter/clusterTSS_bam_domTSS1bp.bed  > consensusCluster_intersect_B_domTSS1bp.txt
+
+bedtools intersect -wo -s -a ~/Dropbox/z-seq\ analysis/18-0702\ CAGE/14.redo_Q255_filter/consensusCluster_ensembl.bed -b ~/Dropbox/z-seq\ analysis/18-0702\ CAGE/14.redo_Q255_filter/clusterTSS_HS72_domTSS1bp.bed  > consensusCluster_intersect_H_domTSS1bp.txt
+```
+
+
+## check whether 1 cc only intersect 1 domTSS
+```{r}
+iB <- read.delim("consensusCluster_intersect_B_domTSS1bp.txt", header=FALSE, stringsAsFactors=FALSE)
+
+nrow(iB)
+
+# whether each cc only has 1 match
+nrow(unique(select(iB,V4)))
+
+#whether each domTSS only has 1 match
+nrow(unique(select(iB,V10))) 
+
+```
+
+```{r}
+iH <- read.delim("consensusCluster_intersect_H_domTSS1bp.txt", header=FALSE, stringsAsFactors=FALSE)
+
+nrow(iH)
+
+# whether each cc only has 1 match
+nrow(unique(select(iH,V4)))
+
+#whether each domTSS only has 1 match
+nrow(unique(select(iH,V10))) 
+
+```
+
+# add in promoter width
+```{r}
+clusterTSS_bam <- read.delim("~/Dropbox/z-seq analysis/18-0702 CAGE/14.redo_Q255_filter/clusterTSS_bam.txt", stringsAsFactors=FALSE) %>% mutate(ID=paste0("clusterTSS_bam_",cluster)) %>%  select(ID, strand, dominant_ctss, interquantile_width)
+
+iB_width = inner_join(iB, clusterTSS_bam, by=c("V10"="ID", "V9"="dominant_ctss", "V12"="strand")) %>%  select(-V13) %>% arrange(V1,V3) %>% rename(avg_tpm=V11, domTSS=V9, cluster_id=V4, cc_tpm=V5) 
+nrow(iB_width)
+
+write.table(iB_width, "consensusCluster_B_domTSS1bp_width_table.txt", sep="\t", quote=F, col.names = T, row.names = F)
+```  
+
+```{r}
+clusterTSS_HS72 <- read.delim("~/Dropbox/z-seq analysis/18-0702 CAGE/14.redo_Q255_filter/clusterTSS_HS72.txt", stringsAsFactors=FALSE) %>% mutate(ID=paste0("clusterTSS_HS72_",cluster)) %>%  select(ID, strand, dominant_ctss, interquantile_width)
+
+iH_width = inner_join(iH, clusterTSS_HS72, by=c("V10"="ID", "V9"="dominant_ctss", "V12"="strand")) %>%  select(-V13) %>% arrange(V1,V3) %>% rename(avg_tpm=V11, domTSS=V9, cluster_id=V4, cc_tpm=V5) 
+nrow(iH_width)
+
+write.table(iH_width, "consensusCluster_H_domTSS1bp_width_table.txt", sep="\t", quote=F, col.names = T, row.names = F)
+```  
+
+```{r}
+sessionInfo()
+```
+

@@ -1,0 +1,67 @@
+---
+title: ""
+author: "Dan Lu"
+date: "Oct 17, 2018"
+output: html_document
+---
+
+
+Note the 'tpm' in consensusClustertpm.txt is raw counts from CAGEr using full width of consensus clusters, with replicate combined. So they should be in perfect correlation with bedtools counts when summing the 2 replicates
+
+
+```{r}
+suppressMessages(library(tidyverse))
+suppressMessages(library(magrittr))
+library(plotly)
+
+options(tibble.width = Inf)
+options(scipen=999)
+
+source("~/Dropbox/coding/R/my_package/genomicsDL/R/get_TSS.r")
+```
+
+
+```{r}
+consensusClustertpm <- read.delim("~/Dropbox/z-seq analysis/18-0702 CAGE/14.redo_Q255_filter/consensusClustertpm.txt", stringsAsFactors=FALSE)
+
+consensusClustertpm$cluster=paste0("cluster",row.names(consensusClustertpm))
+
+counts_B1 <- read.delim("~/Dropbox/z-seq analysis/18-0702 CAGE/14.redo_Q255_filter/counts_B1.txt", header=FALSE, stringsAsFactors=FALSE)
+
+counts_H1 <- read.delim("~/Dropbox/z-seq analysis/18-0702 CAGE/14.redo_Q255_filter/counts_H1.txt", header=FALSE, stringsAsFactors=FALSE)
+
+
+counts_B2 <- read.delim("~/Dropbox/z-seq analysis/18-0702 CAGE/14.redo_Q255_filter/counts_B2.txt", header=FALSE, stringsAsFactors=FALSE)
+
+counts_H2 <- read.delim("~/Dropbox/z-seq analysis/18-0702 CAGE/14.redo_Q255_filter/counts_H2.txt", header=FALSE, stringsAsFactors=FALSE)
+
+logt_c=full_join(consensusClustertpm, counts_B1, by=c("cluster"="V1")) %>% rename(B1=V2) %>% full_join(counts_H1, by=c("cluster"="V1")) %>% rename(H1=V2) %>% full_join(counts_B2, by=c("cluster"="V1")) %>% rename(B2=V2) %>% full_join(counts_H2, by=c("cluster"="V1")) %>% rename(H2=V2) %>% mutate(B=(B1+B2), H=(H1+H2))
+
+names(logt_c)
+
+min(logt_c$bam)
+```
+
+
+## plot bam_CAGE tpm vs counts
+```{r}
+logt_c %>% filter(bam > 0 | B > 0) %>% ggplot( aes(log2(bam+0.1), log2(B+0.1))) +
+ xlab("log2(bam CAGEr counts)") +
+    ylab("log2(bam bedtools counts)") +
+  geom_abline(intercept = 0, slope = 1, color='red') +
+    geom_bin2d(bins = 150) + scale_fill_distiller(palette = "YlGnBu", direction = -1)
+```
+
+## plot HS72_CAGE tpm vs counts
+```{r}
+logt_c %>% filter(HS72 > 0 | H > 0) %>% ggplot( aes(log2(HS72+0.1), log2(H+0.1))) +
+  xlab("log2(HS72 CAGEr counts)") +
+  ylab("log2(H bedtools counts)") +
+  geom_abline(intercept = 0, slope = 1, color='red') +
+  geom_bin2d(bins = 150) + scale_fill_distiller(palette = "YlGnBu", direction = -1)
+```
+
+
+```{r}
+sessionInfo()
+```

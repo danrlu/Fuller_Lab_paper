@@ -1,0 +1,167 @@
+---
+title: "Redo DE with only CAGE clusters that fall within exons"
+output: html_document
+date: "1/29/19"
+author: Dan Lu
+---
+
+Note: when intersect gene exons with consensus clusters, created multiple entries for each gene vs consensus cluster match. 
+<br>
+Take all consensus clusters fall within genes, use raw counts to do DE
+
+
+```{r}
+suppressWarnings(suppressMessages(library(DESeq2)))
+suppressWarnings(suppressMessages(library(tidyverse)))
+suppressWarnings(suppressMessages(library(magrittr)))
+
+options(tibble.width = Inf)
+options(scipen=999)
+
+```
+
+
+
+```{r, self.contained=F}
+intersect_consensusCluster <- read.delim("BDGP6_coding_up500_5utr_CDS_intersect_consensusCluster_0.4ol.txt", header=FALSE, stringsAsFactors=FALSE) %>% select(V10) %>% unique()
+
+
+filename_list = list.files(path = "~/Dropbox/z-seq analysis/18-0702 CAGE/14.redo_Q255_filter", pattern="^counts_.*\\.txt", full.names = T)
+
+file_list <- lapply(filename_list, read.delim, header = F, stringsAsFactors=FALSE)
+names(file_list) <- stringr::str_replace(filename_list, pattern = ".*/Dropbox/z-seq analysis/18-0702 CAGE/14.redo_Q255_filter/", replacement = "")
+names(file_list) <- stringr::str_replace(names(file_list), pattern = ".txt", replacement = "_up500_5utr_CDS.txt")
+
+nrow(intersect_consensusCluster)
+nrow(file_list[[1]])
+
+for (nm in names(file_list)) {
+  
+keep= semi_join(file_list[[nm]], intersect_consensusCluster, by=c("V1"="V10")) %>% unique()
+
+p=ggplot(keep, aes(log2(V2+1))) + geom_histogram() + ggtitle(paste0("keep ",nm))
+print(p)
+
+write.table(keep, nm, quote=F, sep="\t", row.names = F, col.names = F)
+
+# also write out the clusters that are removed
+
+toss= anti_join(file_list[[nm]], intersect_consensusCluster, by=c("V1"="V10")) %>% unique()
+
+p=ggplot(toss, aes(log2(V2+1))) + geom_histogram() + ggtitle(paste0("toss ",nm))
+print(p)
+
+}
+```
+
+
+```{r}
+sample_name="_CAGE_BH_up500_5utr_CDS"
+# if you renamed "sampleTable.txt" to "sampleTable_dany_kmg.txt", then here
+# sample_name="_dany_kmg"
+# which is the extra part you added
+
+# load sampleTable which contains names of the count files
+sampleTable <- read.csv(paste0('sampleTable',sample_name,'.txt'))
+file_list=sampleTable$sampleName
+
+
+# Differential expression analysis
+dds <- DESeqDataSetFromHTSeqCount(sampleTable=sampleTable, design=~condition)
+
+#dds <- dds[ rowSums(counts(dds)) > 10, ]  # consensus clusters are built from CAGE peaks, so if cc exist, there should be some reads
+
+dds$condition <- relevel(dds$condition, ref="bam") # set the level to be compared with
+
+rld <- rlog(dds,blind=FALSE) # By setting blind to FALSE, the dispersions already estimated will be used to perform transformations, or if not present, they will be estimated using the current design formula
+write.table(assay(rld),file=paste0("DE_normalized_counts_rlog",sample_name,".txt"),sep = "\t",col.names=NA)
+
+
+dds <- DESeq(dds)
+res <- results(dds)
+resOrdered <- res[order(res$padj),]
+
+write.table(resOrdered,file=paste0("DE_results_all",sample_name,".txt"),sep = "\t",col.names=NA)
+# col.names=NA is necessary otherwise 1st column will not have a header and format is a mess
+
+write.table(counts(dds,normalized=TRUE),file=paste0("DE_normalized_counts",sample_name,".txt"),sep = "\t",col.names=NA)
+
+# make MA plot. If DESeq2 normalization is appropriate here, large amount of genes should fall on the y=0 red line
+#plotMA(res, ylim=c(-10,10)) # this looks very much like the lfcshrinked log2FC because there aren't that many values that are small
+
+resultsNames(dds)
+resLFC <- lfcShrink(dds, coef=2)
+plotMA(resLFC, ylim=c(-10,10))
+```
+
+
+```{r}
+#CAGE_rlog_new <- read.delim("~/Dropbox/z-seq analysis/17-1227 Hosu RNAseq/7. DEnCAGE/DE_normalized_counts_rlog_CAGE_BH_gene.txt", stringsAsFactors=FALSE) %>% mutate(bam_CAGE=(B1+B2)/2, HS72_CAGE=(H1+H2)/2)
+
+CAGE_rlog_new <- as.data.frame(assay(rld)) %>% mutate(bam_CAGE=(B1+B2)/2, HS72_CAGE=(H1+H2)/2)
+# assay(rld)
+
+ggplot(CAGE_rlog_new, aes(B1,B2)) +
+    geom_point(alpha = 3/10, size = 0.3, color="grey42") +
+    xlab("B1") + xlim(-3,21) + ylim(-3,21) +
+    ylab("B2") +
+    coord_fixed(ratio=1) +
+    geom_abline(intercept = 0, slope = 1, color='red', alpha=0.5) +
+    theme(plot.title = element_text(hjust = 0.5))  + theme_light()
+
+
+ggplot(CAGE_rlog_new, aes(H1, H2)) +
+    geom_point(alpha = 3/10, size = 0.3, color="grey42") +
+    xlab("H1") + xlim(-3,21) + ylim(-3,21) +
+    ylab("H2") +
+    coord_fixed(ratio=1) +
+    geom_abline(intercept = 0, slope = 1, color='red', alpha=0.5) +
+    theme(plot.title = element_text(hjust = 0.5))  + theme_light()
+
+# note the 2 H replicate are a bit different
+ggplot(CAGE_rlog_new, aes(bam_CAGE,H1)) +
+    geom_point(alpha = 3/10, size = 0.3, color="grey42") +
+    xlab("bam_CAGE_rlog") + xlim(-3,21) + ylim(-3,21) +
+    ylab("HS72_CAGE_H1_rlog") +
+    coord_fixed(ratio=1) +
+    geom_abline(intercept = 0, slope = 1, color='red', alpha=0.5) +
+    theme(plot.title = element_text(hjust = 0.5))  + theme_light()
+
+ggplot(CAGE_rlog_new, aes(bam_CAGE,H2)) +
+    geom_point(alpha = 3/10, size = 0.3, color="grey42") +
+    xlab("bam_CAGE_rlog") + xlim(-3,21) + ylim(-3,21) +
+    ylab("HS72_CAGE_H2_rlog") +
+    coord_fixed(ratio=1) +
+    geom_abline(intercept = 0, slope = 1, color='red', alpha=0.5) +
+    theme(plot.title = element_text(hjust = 0.5))  + theme_light()
+
+```
+
+
+
+```{r}
+CAGE_rlog_old <- read.delim("~/Dropbox/z-seq analysis/18-0702 CAGE/7. bam_hs72_sa/4.consensusClusters/2. CAGE_DE/DE_normalized_counts_rlog_BH.txt", stringsAsFactors=FALSE) %>% mutate(bam_CAGE=(B1+B2)/2, HS72_CAGE=(H1+H2)/2)
+
+ggplot(CAGE_rlog_old, aes(bam_CAGE,HS72_CAGE)) +
+  geom_point(alpha = 3/10, size = 0.3, color="grey42") +
+  xlab("bam_CAGE_rlog") + xlim(-3,21) + ylim(-3,21) +
+  ylab("HS72_CAGE_rlog") +
+  coord_fixed(ratio=1) +
+  geom_abline(intercept = 0, slope = 1, color='red', alpha=0.5) +
+  theme(plot.title = element_text(hjust = 0.5))  + theme_light()
+
+```
+
+
+```{r}
+DE_CAGE <- read.delim("DE_results_all_CAGE_BH_up500_5utr_CDS.txt", stringsAsFactors=FALSE)
+
+spgn=filter(DE_CAGE, padj<0.001 & log2FoldChange < -1)
+nrow(spgn)
+```
+
+
+```{r}
+sessionInfo()
+```
+

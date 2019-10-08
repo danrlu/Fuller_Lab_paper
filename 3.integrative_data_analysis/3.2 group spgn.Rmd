@@ -1,0 +1,247 @@
+---
+title: "Group spgn genes in bam and hs72"
+author: "Dan Lu"
+date: "3/4/2019"
+output:  html_document
+---
+
+
+##**spgn**: gene on to down, contains only Bcc  
+  (1) log2FoldChange < -1 down in hs48hr AND   
+  (2) log2FoldChange < -1 down in hs72hr AND  
+  (3) bam_RNA >= 5 AND
+  (4) bam_CAGE > HS72_CAGE rlog AND  
+  (5) overlap with only Bcc  
+  (6) write out the Bcc only if it is most expressed and most upstream  
+<br>
+Note the RNA DE already used only non mito coding genes. CAGE DE only used clusters that fall in TSSup500+5utr+CDS of these genes.  
+<br>
+write out domTSS1bp using cluster_B_domTSS1bp with promomter width (unique), and write out the list of IDs (mostly unique due to 1 gene to 1 CAGE cluster mapping, but have 2 duplicate CAGE clusters because 2x2 genes share the same 1st exon)
+<br>
+
+
+```{r message=F, warning=F, echo=F}
+suppressWarnings(suppressMessages(library(RColorBrewer)))
+suppressWarnings(suppressMessages(library(tidyverse)))
+suppressWarnings(suppressMessages(library(magrittr)))
+library(gridExtra)
+
+source("~/Dropbox/coding/R/my_package/genomicsDL/R/get_TSS.r")
+
+options(tibble.width = Inf)
+options(scipen=999)
+```
+
+
+# Define parameters. Optimized after running this whole script.
+Note that sleuth_test.txt has already removed genes not expressed across all samples. 
+```{r}
+plot_range=c(-3, 18) 
+on_cut_RNA=5
+qval_cut=0.001
+log2FoldChange_cut=1
+```
+
+
+## load rlog results
+```{r}
+rlog_all <- read.delim("BDGP6_coding_up500_5utr_CDS_RNA_CAGE_rlog.txt", stringsAsFactors=FALSE) # each gene has multiple CAGE intersection rows
+```
+
+
+
+# define spgn genes
+## Load results between bam and hs72
+```{r message=F}
+b7 <- read.delim("DE_HS72vsBam_RNA_results_all.txt", stringsAsFactors=FALSE)
+
+b4 <- read.delim("DE_HS48vsBam_RNA_results_all.txt", stringsAsFactors=FALSE)
+```
+
+
+
+##spgn down regulated: TRY log2FoldChange < -log2FoldChange_cut down in hs48hr AND/OR < -log2FoldChange_cut down in hs72hr
+Note that hs72 usually has more spermatogonia genes expression comparing to hs48 due to accumulation of new spermatogonia
+```{r}
+bamon_48down = filter(b4, log2FoldChange < -log2FoldChange_cut & padj < qval_cut)
+
+# many genes go down at 48hr and the up again in 72hr.
+head(semi_join(rlog_all,bamon_48down,by="X"))
+
+# use a less stringent cut off for spgn that are down at 72hr
+bamon_72down = filter(b7, log2FoldChange < -log2FoldChange_cut & padj < qval_cut)
+
+bamon_48_or_72down_id=bind_rows(select(bamon_48down,X),select(bamon_72down,X)) %>% unique()
+
+bamon_48_and_72down_id=inner_join(select(bamon_48down,X),select(bamon_72down,X))
+```
+
+
+```{r}
+# plot RNA
+rlog_all %>% select(X:n_cc) %>% unique() %>% semi_join(bamon_48_and_72down_id, by="X") %>%  
+  ggplot(aes(bam_RNA, HS72_RNA)) +
+    geom_bin2d(bins = 150) +
+    geom_abline(intercept = 1, slope = 1, color="red") + 
+       geom_abline(intercept = -1, slope = 1, color="red") + 
+    coord_fixed(ratio=1) +
+    xlim(plot_range) +
+    ylim(plot_range) + scale_fill_distiller(palette = "YlGnBu", direction = -1)
+
+
+rlog_all %>% select(X:n_cc) %>% unique() %>% semi_join(bamon_48_or_72down_id, by="X") %>%  
+  ggplot(aes(bam_RNA, HS72_RNA)) +
+  geom_bin2d(bins = 150) +
+    geom_abline(intercept = 1, slope = 1, color="red") + 
+       geom_abline(intercept = -1, slope = 1, color="red") + 
+    coord_fixed(ratio=1) +
+    xlim(plot_range) +
+    ylim(plot_range) +  scale_fill_distiller(palette = "YlGnBu", direction = -1)
+
+
+
+```
+
+
+## keep genes that have only Bcc cluster (Bcc_gene) and check the CAGE scatter plot
+```{r}
+spgn_and = rlog_all %>%  semi_join(bamon_48_and_72down_id, by="X") %>% filter(gene_cc_type=="Bcc_gene")
+
+spgn_or = rlog_all %>%  semi_join(bamon_48_or_72down_id, by="X") %>% filter(gene_cc_type=="Bcc_gene") 
+temp=filter(spgn_and, bam_CAGE < HS72_CAGE-1) 
+print(temp)
+
+# plot CAGE
+spgn_and %>%  
+  ggplot(aes(bam_CAGE, HS72_CAGE)) +
+    geom_bin2d(bins = 150) +
+    geom_abline(intercept = 1, slope = 1, color="red") + 
+       geom_abline(intercept = -1, slope = 1, color="red") + 
+    coord_fixed(ratio=1) +
+    xlim(plot_range) +
+    ylim(plot_range) + scale_fill_distiller(palette = "YlGnBu", direction = -1)
+
+
+spgn_or %>%  
+  ggplot(aes(bam_CAGE, HS72_CAGE)) +
+  geom_bin2d(bins = 150) +
+    geom_abline(intercept = 1, slope = 1, color="red") + 
+       geom_abline(intercept = -1, slope = 1, color="red") + 
+    coord_fixed(ratio=1) +
+    xlim(plot_range) +
+    ylim(plot_range) +  scale_fill_distiller(palette = "YlGnBu", direction = -1)
+```
+
+
+## only keep those that RNA bam is ON, CAGE bam is ON and is consistent with RNA change
+```{r}
+nrow(spgn_and)
+spgn_and %<>% filter(bam_RNA > on_cut_RNA) %>% filter(bam_CAGE > HS72_CAGE)
+
+nrow(spgn_and)
+```
+
+
+## see how number of cc correlate with expression level
+```{r, fig.width=5, fig.height=8}
+p1=spgn_and %>% select(X:n_cc) %>% unique() %>% filter(n_cc==1) %>% mutate(n_cc=as.factor(n_cc)) %>% ggplot()+geom_point(aes(x=bam_RNA, y=HS72_RNA, color=n_cc), size=0.6) + xlim(3,18) + ylim(3,18)
+
+p2=spgn_and %>% select(X:n_cc) %>% unique() %>% filter(n_cc>1) %>% mutate(n_cc=as.factor(n_cc)) %>% ggplot()+geom_point(aes(x=bam_RNA, y=HS72_RNA, color=n_cc), size=0.6) + xlim(3,18) + ylim(3,18)
+
+grid.arrange(p1,p2,ncol=1)
+```
+
+
+
+## only keep 1 Bcc: if > 1 Bcc, use the one if it is both most upstream AND most expressed
+```{r}
+ccB <- read.delim("consensusCluster_B_domTSS1bp_width_table.txt", stringsAsFactors=FALSE)
+names(ccB)
+
+spgn_domTSS=inner_join(ccB, spgn_and, by=c("cluster_id"="V10")) 
+
+nrow(spgn_domTSS) # some cc are lost due to not having a domTSS1bp
+
+########## find the more upstream cluster
+# on + strand, sort by genomic coordinate, and remove the 2nd duplicate for each gene
+spgn_fw=filter(spgn_domTSS, V12=="+") %>% arrange(V7, domTSS)
+spgn_fw_unq=spgn_fw[!duplicated(spgn_fw["X"]),]
+
+# on - strand, sort by reverse genomic coordiante, and remove the 2nd duplicate for each gene
+spgn_rv=filter(spgn_domTSS, V12=="-") %>% arrange(V7, -domTSS)
+spgn_rv_unq=spgn_rv[!duplicated(spgn_rv["X"]),]
+
+spgn_upstream=bind_rows(spgn_fw_unq, spgn_rv_unq) 
+nrow(spgn_upstream)
+
+######### find the more expressed cluster
+spgn_domTSS %<>% arrange(-bam_CAGE)
+spgn_higher=spgn_domTSS[!duplicated(spgn_domTSS["X"]),]
+nrow(spgn_higher)
+
+spgn_domTSS_unq = inner_join(spgn_upstream, spgn_higher) 
+nrow(spgn_domTSS_unq)
+
+write.table(spgn_domTSS_unq, 'spgn_Bcc_all_cc.txt', sep="\t", quote=F, row.names = F, col.names = T)
+```
+
+
+# write out ID and bed
+```{r}
+TSS_unq = select(spgn_domTSS_unq, V7,V8,domTSS,V10,interquantile_width,V12) %>% arrange(interquantile_width) %>% unique()
+
+ID_unq = select(spgn_domTSS_unq, X, cluster_id, V10) %>% unique() %>% arrange(X)
+nrow(TSS_unq)
+nrow(ID_unq) 
+
+write.table(TSS_unq, 'spgn_Bcc_all_unq_domTSS1bp_srt_width_cc.bed', sep="\t", quote=F, row.names = F, col.names = F)
+
+write.table(ID_unq, 'spgn_Bcc_all_ID_cc.txt', sep="\t", quote=F, row.names = F, col.names = F)
+
+```
+
+
+# narrow promoters interq_widh < 11
+```{r}
+spgn_domTSS_narrow=filter(spgn_domTSS_unq, interquantile_width<11)
+
+TSS_narrow = select(spgn_domTSS_narrow, V7,V8,domTSS,V10,interquantile_width,V12) %>% arrange(interquantile_width) %>% unique()
+
+ID_narrow = select(spgn_domTSS_narrow, X, cluster_id, V10) %>% unique() %>% arrange(X)
+nrow(TSS_narrow)
+nrow(ID_narrow) 
+# the number don't match because in rare occasions 2 genes share the same first exon. FBgn0265185
+# df=select(ID,V10)
+# df[duplicated(df) | duplicated(df, fromLast = TRUE),] 
+#[1] "clusterTSS_B1_4261" "clusterTSS_B1_4261" "clusterTSS_B1_3416"
+#[4] "clusterTSS_B1_3416"
+#that is FBgn0265185 and FBgn0265180
+
+write.table(TSS_narrow, 'spgn_Bcc_narrow_unq_domTSS1bp_srt_width_cc.bed', sep="\t", quote=F, row.names = F, col.names = F)
+
+write.table(ID_narrow, 'spgn_Bcc_narrow_ID_cc.txt', sep="\t", quote=F, row.names = F, col.names = F)
+```
+
+
+# broad promoters interq_widh > 10
+```{r}
+spgn_domTSS_broad=filter(spgn_domTSS_unq, interquantile_width > 10)
+
+TSS_broad = select(spgn_domTSS_broad, V7,V8,domTSS,V10,interquantile_width,V12) %>% arrange(interquantile_width) %>% unique()
+
+ID_broad = select(spgn_domTSS_broad, X, cluster_id, V10) %>% unique() %>% arrange(X)
+nrow(TSS_broad)
+nrow(ID_broad) 
+
+write.table(TSS_broad, 'spgn_Bcc_broad_unq_domTSS1bp_srt_width_cc.bed', sep="\t", quote=F, row.names = F, col.names = F)
+
+write.table(ID_broad, 'spgn_Bcc_broad_ID_cc.txt', sep="\t", quote=F, row.names = F, col.names = F)
+
+```
+
+
+
+```{r}
+sessionInfo()
+```
+

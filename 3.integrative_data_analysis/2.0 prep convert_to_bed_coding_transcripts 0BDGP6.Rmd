@@ -1,0 +1,75 @@
+---
+title: "Get .bed from .gtf for coding transcripts"
+author: "Dan Lu"
+date: "12/27/2018"
+output: html_document
+---
+
+1. take protein coding transcripts that are on main chromosomes and scaffold (not on mito or rDNA), write to _transcripts.bed, _TSS1bp.bed, _TSS1bpupdown200bp.bed  
+
+2. match RNA and CAGE by gene_id vs every possible TSS+/-200bp overlap CAGE consensus cluster. So if a gene has multiple isoforms with diff TSS, there will be 1 RNA number matching to multiple CAGE counts. Note this gene-CAGE match is only used for this script  
+
+In 3.DE 0.convert_to_bed.. only genes are written out to .bed. Here need transcript TSS to intersect with CAGE peaks  
+
+note that the count files are already filtered for non mito protein coding genes, so for following steps there is no need for more filtering.  
+
+**the files generated here is only for next step to decide cutoff.**  
+
+```{r}
+suppressWarnings(suppressMessages(library(tidyverse)))
+suppressWarnings(suppressMessages(library(magrittr)))
+
+options(tibble.width = Inf)
+options(scipen=999)
+
+source("~/Dropbox/coding/R/my_package/genomicsDL/R/gtf_to_bed.r")
+source("~/Dropbox/coding/R/my_package/genomicsDL/R/get_TSS.r")
+```
+
+
+```{r}
+gtf <- read.delim("~/Dropbox/z-seq analysis/genome/Drosophila_melanogaster.BDGP6.84.gtf", header=FALSE, comment.char="#", stringsAsFactors=FALSE)
+
+levels(as.factor(gtf$V3))
+
+bed=gtf_to_bed(gtf, "transcript", separate_item = T) 
+
+table(select(bed, X1, gene_biotype))
+
+bed_nonMito=filter(bed,X1!="dmel_mitochondrion_genome" & X1!="rDNA") # there is no protein coding gene on rDNA, but do this for clarity
+bed_nonMito_protein=filter(bed_nonMito,gene_biotype=="protein_coding") %>% select(X1:X6) %>% unique
+
+nrow(bed_nonMito_protein)
+
+#write.table(bed_nonMito_protein, "BDGP6_nonMito_coding_transcripts.bed", col.names = F, sep="\t",row.names = F, quote=F)
+
+TSS=get_TSS(bed_nonMito_protein, keep_duplicate = F)
+#TSS_ext200bp=get_TSS(bed, keep_duplicate = F, up_stream = 200, down_stream = 200)# this will go beyond boundary of chromosomes... use bedtools
+
+write.table(TSS, "0BDGP6_nonMito_coding_transcripts_unq_TSS1bp.bed", col.names = F, sep="\t",row.names = F, quote=F)
+
+```
+
+## to confirm that the count files (input for DE) are already filtered for non mito protein coding genes
+```{r}
+SHS1.1 <- read.delim("SHS-1-1-ATCACG_S1_R1_001_val_1_ReadsPerGene.out.tab.srt.3_nonMito_protein.txt", header=FALSE, stringsAsFactors=FALSE) %>% select(V1)
+
+nrow(SHS1.1)
+
+# all genes in the count file should be non mito protein coding ones
+test=inner_join(SHS1.1, unique(select(bed_nonMito_protein, X4)), by=c("V1"="X4"))
+nrow(test)
+```
+
+
+```{bash}
+bedtools slop -b 200 -i "0BDGP6_nonMito_coding_transcripts_unq_TSS1bp.bed" -g ~/Dropbox/z-seq\ analysis/genome/Drosophila_melanogaster.BDGP6.dna.toplevel.fa.fai > "0BDGP6_nonMito_coding_transcripts_uTSS1bpupdown200bp.bed"
+```
+
+
+
+## intersect CAGE consensus cluster with promoter regions of transcripts 
+```{bash}
+bedtools intersect -wo -s -a "0BDGP6_nonMito_coding_transcripts_uTSS1bpupdown200bp.bed" -b ~/Dropbox/z-seq\ analysis/18-0702\ CAGE/14.redo_Q255_filter/consensusCluster_ensembl.bed > "0BDGP6_coding_TSS200bp_intersect_consensusCluster.txt"
+
+```

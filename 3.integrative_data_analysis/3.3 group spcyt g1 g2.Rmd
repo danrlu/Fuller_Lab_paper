@@ -1,0 +1,329 @@
+---
+title: "Group spcyt transcripts by number of CAGE TSS"
+author: "Dan Lu"
+date: "2/18/19"
+output: html_document
+---
+
+##**spcyt g1: gene off to on, contains only Hcc**  
+  (1) hs48 vs bam: log2FoldChange > 3 OR hs72 vs bam: log2FoldChange > 4  
+  (2) off in bam RNA < 8
+  (3) contains only Hcc  
+  (4) if >1 Hcc, write out the one if it is most expressed and most upstream  
+<br>
+<br>
+
+##**spcyt g2: gene on to on, contains Bcc and Hcc**  
+  (1) gene contains Bcc and Hcc (gene_cc_type is "both")
+  (2) gene on in bam RNA > 5, on in HS72 RNA > 5
+  (3) for each gene, only keep 1 Bcc: if > 1 Bcc, use the one if it is most expressed and most upstream  
+  (4) only keep 1 Hcc: if > 1 Hcc, use the one if it is most expressed and most upstream  
+**g2up: Hcc is upstream of Bcc**  
+**g2down: Hcc is downstrame of Bcc**  
+<br>
+
+
+```{r}
+suppressMessages(library(tidyverse))
+suppressMessages(library(magrittr))
+library(gridExtra)
+
+options(tibble.width = Inf)
+options(scipen=999)
+
+source("~/Dropbox/coding/R/my_package/genomicsDL/R/get_TSS.r")
+source("~/Dropbox/coding/R/my_package/genomicsDL/R/get_TES.r")
+```
+
+
+```{r}
+log2FoldChange_cut_b4=3
+log2FoldChange_cut_b7=4
+#log2FoldChange_cut_aly=-1
+#log2FoldChange_cut_cage=4
+qval_cut=0.001
+on_cut_RNA=5
+g1_cut_bam_RNA=8
+```
+
+
+## load rlog for both RNA and CAGE, contains gene ID, consensus cluster ID and gene_cc_type
+Note each gene has multiple CAGE intersection rows
+```{r}
+rlog_all <- read.delim("BDGP6_coding_up500_5utr_CDS_RNA_CAGE_rlog.txt", stringsAsFactors=FALSE)
+
+table(rlog_all$cc_type) # for cluster
+table(rlog_all$gene_cc_type) # for gene
+
+```
+
+
+## load cc to domTSS conversion table
+```{r}
+ccB <- read.delim("consensusCluster_B_domTSS1bp_width_table.txt", stringsAsFactors=FALSE)
+names(ccB)
+
+ccH <- read.delim("consensusCluster_H_domTSS1bp_width_table.txt", stringsAsFactors=FALSE)
+names(ccH)
+
+ 
+```
+
+
+# **g1: off-on, only Hcc**
+###  (1) hs48 vs bam: log2FoldChange > 3 OR hs72 vs bam: log2FoldChange > 4  
+```{r message=F}
+b4 <- read.delim("DE_HS48vsBam_RNA_results_all.txt", stringsAsFactors=FALSE)
+
+spcyt_b4 = filter(b4, log2FoldChange > log2FoldChange_cut_b4 & padj < qval_cut)
+
+b7 <- read.delim("DE_HS72vsBam_RNA_results_all.txt", stringsAsFactors=FALSE)
+
+spcyt_b7 = filter(b7, log2FoldChange > log2FoldChange_cut_b7 & padj < qval_cut)
+
+spcyt_b47_id = full_join(select(spcyt_b4,X), select(spcyt_b7,X))
+  
+g1 = semi_join(rlog_all, spcyt_b47_id,by="X")  
+nrow(g1)
+```
+
+
+###  (2) off in bam RNA < cut
+###  (3) contains only Hcc 
+```{r}
+# only Hcc gene
+g1%<>% filter(gene_cc_type=="Hcc_gene") %>% filter(bam_RNA < g1_cut_bam_RNA)
+nrow(g1)
+```
+
+
+###  (3) if >1 Hcc, write out the one if it is most expressed and most upstream  
+```{r}
+# add in domTSS and cluster coordinate from HS72 CAGE
+g1 %<>% inner_join(ccH, by=c("V10"="cluster_id"))
+nrow(g1)
+
+# keep the most upstream = most expressed Hcc
+########## find the more upstream cluster
+# on + strand, sort by genomic coordinate, and remove the 2nd duplicate for each gene
+g1_fw=filter(g1, V12=="+") %>% arrange(V7, domTSS)
+g1_fw_unq=g1_fw[!duplicated(g1_fw["X"]),]
+
+# on - strand, sort by reverse genomic coordiante, and remove the 2nd duplicate for each gene
+g1_rv=filter(g1, V12=="-") %>% arrange(V7, -domTSS)
+g1_rv_unq=g1_rv[!duplicated(g1_rv["X"]),]
+
+g1_upstream=bind_rows(g1_fw_unq, g1_rv_unq) 
+nrow(g1_upstream)
+
+######### find the more expressed cluster
+g1 %<>% arrange(-HS72_CAGE)
+g1_higher=g1[!duplicated(g1["X"]),]
+nrow(g1_higher)
+
+g1_unq = inner_join(g1_upstream, g1_higher) 
+nrow(g1_unq)
+```
+
+
+
+
+
+# **spcyt g2: gene on to on, contains Bcc and Hcc**  
+  (1) gene contains Bcc and Hcc (gene_cc_type is "both")
+  (2) gene on in bam RNA > cut, on in HS72 RNA > cut 
+  (3) for each gene, only keep 1 Bcc: if > 1 Bcc, use the one if it is most expressed and most upstream  
+  (4) only keep 1 Hcc: if > 1 Hcc, use the one if it is most expressed and most upstream
+```{r}
+g2 = filter(rlog_all, gene_cc_type=="both_gene") %>% filter(bam_RNA > on_cut_RNA & HS72_RNA > on_cut_RNA)
+
+# take a look at RNA CAGE
+p1=ggplot(g2, aes(bam_CAGE, HS72_CAGE)) + geom_point(size=0.5, alpha=0.5, aes(color=cc_type)) + xlim(-3,22) + ylim(-3,22) + coord_fixed(ratio=1)
+
+p2=ggplot(g2, aes(bam_RNA, bam_CAGE)) + geom_point(size=0.5, alpha=0.5, aes(color=cc_type)) + xlim(-3,22) + ylim(-3,22) + coord_fixed(ratio=1)
+
+p3=ggplot(g2, aes(HS72_RNA, HS72_CAGE)) + geom_point(size=0.5, alpha=0.5, aes(color=cc_type)) + xlim(-3,22) + ylim(-3,22) + coord_fixed(ratio=1)
+
+p4=ggplot(g2, aes(bam_RNA, HS72_RNA)) + geom_point(size=0.5, alpha=0.5, aes(color=cc_type)) + xlim(-3,22) + ylim(-3,22) + coord_fixed(ratio=1)
+
+grid.arrange(p1, p4, p2, p3, ncol=2)
+```
+
+
+
+## for each gene, only keep 1 Bcc: if > 1 Bcc, use the one if it is both more upstream AND more expressed
+```{r}
+g2_B=filter(g2, cc_type=="Bcc")
+nrow(g2_B)
+g2_B %<>% inner_join(ccB, by=c("V10"="cluster_id")) 
+nrow(g2_B) # some cc are lost due to not having a domTSS1bp
+
+########## find the more upstream cluster
+# on + strand, sort by genomic coordinate, and remove the 2nd duplicate for each gene
+g2_B_fw=filter(g2_B, V12=="+") %>% arrange(V7, domTSS)
+g2_B_fw_unq=g2_B_fw[!duplicated(g2_B_fw["X"]),]
+
+# on - strand, sort by reverse genomic coordiante, and remove the 2nd duplicate for each gene
+g2_B_rv=filter(g2_B, V12=="-") %>% arrange(V7, -domTSS)
+g2_B_rv_unq=g2_B_rv[!duplicated(g2_B_rv["X"]),]
+
+g2_B_upstream=bind_rows(g2_B_fw_unq, g2_B_rv_unq) 
+nrow(g2_B_upstream)
+
+######### find the more expressed cluster
+g2_B %<>% arrange(-bam_CAGE)
+g2_B_higher=g2_B[!duplicated(g2_B["X"]),]
+nrow(g2_B_higher)
+
+g2_B_unq = inner_join(g2_B_upstream, g2_B_higher) %>% select(X, V10, cc_type, V7:interquantile_width) 
+
+nrow(g2_B_unq)
+
+```
+
+
+## for each gene, only keep 1 Hcc: if > 1 Hcc, use the one if it is both more upstream AND more expressed
+```{r}
+g2_H=filter(g2, cc_type=="Hcc") 
+nrow(g2_H)
+g2_H %<>% inner_join(ccH, by=c("V10"="cluster_id")) 
+nrow(g2_H)
+nrow(unique(select(g2_H,X)))
+
+
+########## find the more upstream cluster
+# on + strand, sort by genomic coordinate, and remove the 2nd duplicate for each gene
+g2_H_fw=filter(g2_H, V12=="+") %>% arrange(V7, domTSS)
+g2_H_fw_unq=g2_H_fw[!duplicated(g2_H_fw["X"]),]
+
+# on - strand, sort by reverse genomic coordiante, and remove the 2nd duplicate for each gene
+g2_H_rv=filter(g2_H, V12=="-") %>% arrange(V7, -domTSS)
+g2_H_rv_unq=g2_H_rv[!duplicated(g2_H_rv["X"]),]
+
+g2_H_upstream=bind_rows(g2_H_fw_unq, g2_H_rv_unq) 
+nrow(g2_H_upstream)
+
+######### find the more expressed cluster
+# sort by decreasing CAGE level, and remove the 2nd duplicate for each gene
+g2_H %<>% arrange(-HS72_CAGE)
+g2_H_higher=g2_H[!duplicated(g2_H["X"]),]
+nrow(g2_H_higher)
+
+g2_H_unq = inner_join(g2_H_upstream, g2_H_higher) %>% select(X, V10, cc_type, V7:interquantile_width) 
+nrow(g2_H_unq)
+```
+
+
+## only keep genes that have both Bcc and Hcc
+```{r, fig.width=6, fig.height=9}
+g2_B_H_unq=inner_join(g2_B_unq, g2_H_unq, by="X") 
+nrow(g2_B_H_unq)
+names(g2_B_H_unq)
+
+# make sure there is only 1 entry for each gene which should be the case given that for each gene only kept 1 Bcc and 1 Hcc
+nrow(unique(select(g2_B_H_unq,X)))
+
+# check Bcc and Hcc are on the same strand
+nrow(filter(g2_B_H_unq,V7.x==V7.y)) 
+
+# add distance from Hcc to Bcc
+g2_B_H_unq_fw = filter(g2_B_H_unq, V12.x=="+") %>% mutate(dist=domTSS.y-domTSS.x)
+g2_B_H_unq_rv = filter(g2_B_H_unq, V12.x=="-") %>% mutate(dist=domTSS.x-domTSS.y)
+g2_B_H_unq = bind_rows(g2_B_H_unq_fw, g2_B_H_unq_rv)
+
+
+u1=ggplot(g2_B_H_unq, aes(dist))+geom_histogram()
+u2=filter(g2_B_H_unq, dist < 0) %>% ggplot(aes(-log10(abs(dist))))+geom_histogram()+ggtitle("Hcc is upstream of Bcc")+xlim(-5.5,0)
+u3=filter(g2_B_H_unq, dist > 0) %>% ggplot(aes(log10(abs(dist))))+geom_histogram()+ggtitle("Hcc is downstream of Bcc")+xlim(0,5.5)
+grid.arrange(u1,u2,u3)
+```
+
+
+
+# remover overlap and write output
+```{r}
+overlap=inner_join(g1_unq, g2_B_H_unq, by=c("V10"="V10.y.y")) %>% select(V10)
+print(overlap)
+
+g1_unq %<>% anti_join(overlap, by=c("V10"="V10"))
+g2_B_H_unq %<>% anti_join(overlap, by=c("V10.y.y"="V10"))
+
+```
+
+
+
+## write output for g1, sort by interquantile width
+```{r}
+write.table(g1_unq, "spcyt_g1_Hcc_all_cc.txt", sep="\t", quote=F, col.names = T, row.names = F)
+
+g1_bed = select(g1_unq, V7:V10.y, interquantile_width, V12) %>% arrange(interquantile_width) %>% unique()
+nrow(g1_bed)
+
+write.table(g1_bed, "spcyt_g1_Hcc_unq_domTSS1bp_srt_width_cc.bed", sep="\t", quote=F, col.names = F, row.names = F)
+
+g1_ID = select(g1_unq, X, V10, V10.y) %>% arrange(X)
+write.table(g1_ID, "spcyt_g1_Hcc_ID_cc.txt", sep="\t", quote=F, col.names = F, row.names = F)
+```
+
+
+
+
+## write output for g2:Bcc, Hcc_up, Hcc_down. All sort by interquantile width
+```{r}
+write.table(g2_B_H_unq, "spcyt_g2_all_cc.txt", sep="\t", quote=F, col.names = T, row.names = F)
+
+# write bed files 
+g2_Bccup_bed = filter(g2_B_H_unq, dist < 0) %>% select( V7.x:V10.y.x, interquantile_width.x, V12.x) %>% arrange(interquantile_width.x) %>% unique()
+nrow(g2_Bccup_bed)
+
+g2_Hccup_bed = filter(g2_B_H_unq, dist < 0) %>%  select(V7.y:V10.y.y.y, interquantile_width.y, V12.y) %>% arrange(interquantile_width.y) %>% unique()
+nrow(g2_Hccup_bed)
+
+g2_Bccdown_bed = filter(g2_B_H_unq, dist > 0) %>% select( V7.x:V10.y.x, interquantile_width.x, V12.x) %>% arrange(interquantile_width.x) %>% unique()
+nrow(g2_Bccdown_bed)
+
+g2_Hccdown_bed = filter(g2_B_H_unq, dist > 0) %>%  select(V7.y:V10.y.y.y, interquantile_width.y, V12.y) %>% arrange(interquantile_width.y) %>% unique()
+nrow(g2_Hccdown_bed)
+
+
+write.table(g2_Bccup_bed, "spcyt_g2_Bcc_UP_unq_domTSS1bp_srt_width_cc.bed", sep="\t", quote=F, col.names = F, row.names = F)
+
+write.table(g2_Bccdown_bed, "spcyt_g2_Bcc_DOWN_unq_domTSS1bp_srt_width_cc.bed", sep="\t", quote=F, col.names = F, row.names = F)
+
+write.table(g2_Hccup_bed, "spcyt_g2_Hcc_UP_unq_domTSS1bp_srt_width_cc.bed", sep="\t", quote=F, col.names = F, row.names = F)
+
+write.table(g2_Hccdown_bed, "spcyt_g2_Hcc_DOWN_unq_domTSS1bp_srt_width_cc.bed", sep="\t", quote=F, col.names = F, row.names = F)
+
+
+# write ID files 
+g2_ID = select(g2_B_H_unq, X, cc_type.x, V10.x, V10.y.x, cc_type.y, V10.y.y, V10.y.y.y, dist) %>% unique() %>% arrange(X)
+nrow(g2_ID)
+
+## also create ID that will match the format of g1 and spgn
+g2_Bccup_ID = filter(g2_B_H_unq, dist < 0) %>% select(X, V10.x, V10.y.x, cc_type.x) %>% unique() %>% arrange(X)
+nrow(g2_Bccup_ID)
+
+g2_Hccup_ID = filter(g2_B_H_unq, dist < 0) %>% select(X, V10.y.y, V10.y.y.y,  cc_type.y) %>% unique() %>% arrange(X)
+
+g2_Bccdown_ID = filter(g2_B_H_unq, dist > 0) %>% select(X, V10.x, V10.y.x, cc_type.x) %>% unique() %>% arrange(X)
+nrow(g2_Bccdown_ID)
+
+g2_Hccdown_ID = filter(g2_B_H_unq, dist > 0) %>% select(X, V10.y.y, V10.y.y.y,  cc_type.y) %>% unique() %>% arrange(X)
+
+
+write.table(g2_ID, "spcyt_g2_ID_cc.txt", sep="\t", quote=F, col.names = F, row.names = F)
+
+write.table(g2_Bccup_ID, "spcyt_g2_Bcc_UP_ID_cc.txt", sep="\t", quote=F, col.names = F, row.names = F)
+
+write.table(g2_Bccdown_ID, "spcyt_g2_Bcc_DOWN_ID_cc.txt", sep="\t", quote=F, col.names = F, row.names = F)
+
+write.table(g2_Hccup_ID, "spcyt_g2_Hcc_UP_ID_cc.txt", sep="\t", quote=F, col.names = F, row.names = F)
+
+write.table(g2_Hccdown_ID, "spcyt_g2_Hcc_DOWN_ID_cc.txt", sep="\t", quote=F, col.names = F, row.names = F)
+```
+
+
+```{r}
+sessionInfo()
+```
+

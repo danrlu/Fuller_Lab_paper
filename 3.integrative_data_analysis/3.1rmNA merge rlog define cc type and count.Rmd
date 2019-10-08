@@ -1,0 +1,266 @@
+---
+title: "Merge CAGE and RNA, label clusters and genes"
+author: "Dan Lu"
+date: "2/19/19"
+output:  html_document
+---
+
+This version (1) split all CAGE that fall within coding genes to Bcc or Hcc, the only 'neither' clusters are those with log2FC > 4 but padj too big for Hcc. (2) only count genes that are expressed in RNA and overlap with expressed CAGE (made it in rlog_all)
+
+<br>
+**Bcc: CAGE not very up in HS72 (log2FC of CAGE < 4)**
+Note that CAGE clusters is filtered in the CAGEr step by counts > 50. So just used that as the ON cut for bam, aka any clusters built by CAGEr are ON. 
+<br>
+Note that CAGE raw count threshold 90 is the same as cutting rlog bam < 5, in the current version of CAGEr threshold is 50, close to rlog bam < 4. so there is no cluster with bam rlog and HS72 rlog both < 4.
+<br>
+**Hcc: CAGE very up in HS72 (log2FC of CAGE >= 4)**
+<br>
+**genes: Bcc_genes, Hcc_genes, both_genes and none
+
+```{r message=F, warning=F, echo=F}
+suppressWarnings(suppressMessages(library(RColorBrewer)))
+suppressWarnings(suppressMessages(library(tidyverse)))
+suppressWarnings(suppressMessages(library(magrittr)))
+library(viridis)
+
+source("~/Dropbox/coding/R/my_package/genomicsDL/R/get_TSS.r")
+
+options(tibble.width = Inf)
+options(scipen=999)
+
+source("0_color.r")
+```
+
+
+```{r}
+number_of_spgn_genes=1155 # from 3.2 spgn
+off_cut_CAGE=0 # rlog counts, just do a basic filter to remove those that have 1 replicate too small
+log2FoldChange_cut_cage=4
+qval_cut=0.001
+
+```
+
+
+# merge RNA and CAGE rlog counts
+### load RNA and CAGE rlog transformed counts, and take average 
+Note this time too lowly expressed genes were filtered out in DE
+```{r}
+RNA_rlog <- read.delim("DE_results_rlog_RNA_all.txt", header=T, stringsAsFactors=FALSE) %>% mutate(bam_RNA=(SHS.1.1.HS0hr+SHS.2.1.HS0hr)/2, HS48_RNA=(SHS.1.2.HS48hr+SHS.2.2.HS48hr)/2, HS72_RNA=(SHS.1.3.HS72hr+SHS.2.3.HS72hr)/2, Sa_RNA=(SHS.1.8.Sa+SHS.2.8.Sa)/2, Aly_RNA=(SHS.1.9.Aly+SHS.2.9.Aly)/2 ) #%>% select(X, bam_RNA:Aly_RNA)
+
+
+CAGE_rlog <- read.delim("DE_normalized_counts_rlog_CAGE_BH_up500_5utr_CDS.txt", stringsAsFactors=FALSE) %>% mutate(bam_CAGE = (B1 + B2)/2, HS72_CAGE=(H1+H2)/2) #%>% select(X, bam_CAGE, HS72_CAGE)
+
+```
+
+
+### load RNA gene_id to CAGE consensus cluster conversion
+** note the mapping here is each gene will have multiple TSSup500, 5utr, and CDS, and each of wich can have multiple CAGE cc**
+The purpose of this table is just to map gene with cc and count how many cc per gene. So remove other info from the beginning.
+```{r}
+rcc <- read.delim("BDGP6_coding_up500_5utr_CDS_intersect_consensusCluster_0.4ol.txt", stringsAsFactors=FALSE, header = F) %>% select(V4, V10) %>% unique() # each gene have multiple sections/rows (exons, 5'utr etc.)
+
+nrow(rcc) 
+
+```
+
+
+
+### merge RNA and CAGE normalized counts
+** these are the genes that are expressed! **
+```{r}
+rlog_all = inner_join(RNA_rlog, rcc, by=c("X"="V4")) %>% inner_join(CAGE_rlog, by=c("V10"="X")) 
+
+names(rlog_all)
+
+table(complete.cases(rlog_all))
+sum(!complete.cases(rlog_all))
+
+#write.table(rlog_all, "BDGP6_coding_up500_5utr_CDS_RNA_CAGE_rlog.txt", quote=F, sep="\t", row.names = F, col.names = T)
+#write.table(rlog_all, "temp_rlog.txt", quote=F, sep="\t", row.names = F, col.names = T)
+```
+
+
+```{r}
+print(paste0("number of testis expressed coding genes: ", nrow(RNA_rlog)))
+
+print(paste0("number of CAGE clusters fall within coding genes: ", nrow(unique(select(rcc,V10)))))
+print(paste0("number of all coding genes with CAGE intersect: ", nrow(unique(select(rcc,V4)))))
+
+print(paste0("number of testis expressed genes with CAGE intersect: ", nrow(unique(select(rlog_all,X)))))
+
+#print(paste0("number of CAGE clusters fall within testis expressed genes: ", nrow(unique(select(rlog_all,V10)))))
+```
+
+
+
+
+# define Bcc Hcc with rlog and CAGE DE  
+**here counts all CAGE that is expressed and fall within coding regions (not neccessarily expressed in testis RNA)**   
+
+### load DE for CAGE
+Note the CAGE clusters for DE analysis were already filtered to only contain those fall within genes
+```{r}
+CAGE_DE <- read.delim("DE_results_all_CAGE_BH_up500_5utr_CDS.txt", stringsAsFactors=FALSE) 
+nrow(unique(select(CAGE_DE, X)))
+```
+
+
+### Bcc: CAGE on in bam (rlog >= cutoff) 
+```{r}
+Bcc_on = filter(CAGE_rlog, B1 >= off_cut_CAGE & B2 >= off_cut_CAGE) %>% rename(V10=X) %>% select(V10) %>% unique() 
+
+Bcc_not_up = filter(CAGE_DE, log2FoldChange < log2FoldChange_cut_cage)%>% select(X) %>% unique()
+
+Bcc=inner_join(Bcc_on, Bcc_not_up, by=c("V10"= "X")) %>% unique() %>% mutate(cc_type="Bcc")
+
+table(complete.cases(Bcc))
+```
+
+
+### Hcc: CAGE very up in HS72 (log2FC of CAGE >= cutoff)
+```{r}
+Hcc = filter(CAGE_DE, log2FoldChange >= log2FoldChange_cut_cage & padj < qval_cut ) %>% select(X) %>% rename(V10=X) %>% unique() %>% mutate(cc_type="Hcc")
+```
+
+
+### is there a shift
+```{r}
+shift <- read.delim("~/Dropbox/z-seq analysis/18-0702 CAGE/14.redo_Q255_filter/shifting_promoters_xbam_yHS72.txt", stringsAsFactors=FALSE)
+
+ggplot(shift) + geom_histogram(aes(shifting.score))
+
+shift %>% filter(shifting.score>0) %>% ggplot() + geom_histogram(aes(shifting.score))
+
+shift %>% filter(shifting.score>0) %>% ggplot() + geom_point(aes(shifting.score, -log10(fdr.KS)), size=0.5, alpha=0.5)
+
+shift %<>% filter(shifting.score > 0 & fdr.KS < 0.01) %>% mutate(is.shift=1) %>% select(consensus.cluster, is.shift)
+
+shift$consensus.cluster=paste0("cluster",shift$consensus.cluster)
+```
+
+### label clusters as Bcc/Hcc
+Only write out clusters that have Bcc/Hcc type. 7 genes were lost probably due to padj filter for Hcc. Discard those. 
+```{r}
+allcc=bind_rows(Bcc, Hcc) %>% left_join(shift, by=c("V10"="consensus.cluster"))  %>% mutate(is.shift = ifelse(is.na(is.shift), 0, is.shift)) 
+nrow(allcc) # 
+
+allcc %>%  
+   count(cc_type, is.shift) %>% mutate(super_label=paste0(cc_type, is.shift)) %>%
+  mutate(is_shift = factor(is.shift)) %>%
+  ggplot(aes(x = cc_type, y = n, fill = super_label)) + 
+  geom_bar(stat = "identity") + scale_fill_manual("cc type", values = viridis(4)) 
+table(complete.cases(allcc))
+
+write.table(allcc, "BDGP6_coding_up500_5utr_CDS_cluster_cctype.txt", sep="\t", quote=F, col.names = T, row.names = F)
+```
+
+
+# define gene types by Bcc/Hcc  
+**here only count genes that are expressed in testis (RNA_rlog) and have CAGE clusters (rlog_all) **   
+
+### match CAGE clusters to gene
+With current Bcc Hcc definition, there is only 7 'neither' clusters that fail padj for Hcc, discard those. 
+```{r}
+gcc = select(rlog_all, X, V10) %>% unique() %>% inner_join(allcc, by="V10") 
+
+# full_join(allcc, by="V10") %>% mutate(cc_type = ifelse(is.na(cc_type), "neither", cc_type)) %>% mutate(is.shift = ifelse(is.na(is.shift), 0, is.shift))
+
+nrow(unique(select(gcc, X)))
+```
+
+
+
+### label genes as Bcc only, Hcc only or both
+```{r}
+cc_count = gcc %>% select(X, V10) %>% unique() %>%  group_by(X) %>% summarise(n_cc=n()) 
+
+Hcc_gene=filter(gcc, cc_type=="Hcc") %>% select(X, cc_type) %>% unique()
+Bcc_gene=filter(gcc, cc_type=="Bcc") %>% select(X, cc_type) %>% unique()
+
+both_gene=inner_join(Hcc_gene, Bcc_gene, by="X") %>% mutate(cc_type="both_gene") %>% select(X, cc_type)
+Hcc_only_gene=anti_join(Hcc_gene,  Bcc_gene, by="X") %>% mutate(cc_type="Hcc_gene")
+Bcc_only_gene=anti_join(Bcc_gene,  Hcc_gene, by="X") %>% mutate(cc_type="Bcc_gene")
+all_gene=bind_rows(Hcc_only_gene,Bcc_only_gene,both_gene)
+
+table(complete.cases(all_gene))
+# check to see the numbers match (splitting and merging was done correctly)
+nrow(cc_count)
+nrow(both_gene) + nrow(Hcc_only_gene) + nrow(Bcc_only_gene)
+a=nrow(cc_count)- (nrow(both_gene) + nrow(Hcc_only_gene) + nrow(Bcc_only_gene))
+print(paste0("number of genes with only clusters that are neither Bcc or Hcc",a))
+
+cc_count %<>% left_join(all_gene) %>% rename(gene_cc_type=cc_type) %>% mutate(gene_cc_type = ifelse(is.na(gene_cc_type), "none", gene_cc_type)) 
+
+table(complete.cases(cc_count))
+
+write.table(cc_count, "BDGP6_coding_up500_5utr_CDS_gene_cctype.txt", sep="\t", quote=F, col.names = T, row.names = F)
+```
+
+
+# plot how many Bcc/Hcc each gene has
+### all genes
+```{r}
+kk = cc_count %>% group_by(gene_cc_type) %>% count() 
+print(kk)
+
+# kk %<>% add_row(gene_cc_type="spgn", n=number_of_spgn_genes) %>% add_row(gene_cc_type="others", n=kk[1,1]-number_of_spgn_genes) 
+# can't add rows to grouped data frames...
+
+kk2=data_frame(gene_label_type=c("4.genes with alternative promoters", "3.upregulated genes", "1.downregulated genes","2.others"),  n=c(as.integer(kk[kk$gene_cc_type=="both_gene","n"]),  as.integer(kk[kk$gene_cc_type=="Hcc_gene","n"]), number_of_spgn_genes,  as.integer(kk[kk$gene_cc_type=="Bcc_gene","n"])-number_of_spgn_genes))
+
+print(kk2)
+
+kk2 %>% mutate(dummy_x=1) %>%  ggplot(aes(x = dummy_x, y = n, fill = gene_label_type)) + geom_bar(stat = "identity", position = position_stack(reverse = TRUE)) + 
+  scale_fill_manual(values = c("1.downregulated genes"=Bcc_gene_color, "2.others" ="grey70", "3.upregulated genes"=Hcc_g1_color, "4.genes with alternative promoters" =both_g2_color)) + 
+  coord_flip() + theme_light()
+
+ggsave("plot_gene_cc_type_count.pdf")
+
+# plot by number of clusters per gene
+
+cc_count %>%
+  count(n_cc, gene_cc_type) %>%
+  mutate(gene_cc_type = factor(gene_cc_type)) %>%
+  ggplot(aes(x = n_cc, y = n, fill = gene_cc_type)) + 
+  geom_bar(stat = "identity") + 
+  scale_fill_manual(values = c("Bcc_gene"=Bcc_gene_color, "Hcc_gene"=Hcc_g1_color, "both_gene" =both_g2_color)) +   xlim(0,7) 
+
+
+```
+
+
+# merge all labels into rlog_all
+```{r}
+nrow(rlog_all)
+
+rlog_all%<>%inner_join(cc_count, by=c("X"="X")) %>% mutate(n_cc = ifelse(is.na(n_cc), 0, n_cc)) 
+nrow(rlog_all)
+
+rlog_all %<>% inner_join(allcc, by="V10") %>% mutate(cc_type = ifelse(is.na(cc_type), "neither", cc_type)) %>% mutate(is.shift = ifelse(is.na(is.shift), 0, is.shift)) 
+nrow(rlog_all)
+
+table(complete.cases(rlog_all))
+
+rlog_all %<>% select(X, bam_RNA:Aly_RNA, V10, bam_CAGE, HS72_CAGE, gene_cc_type, n_cc, cc_type, is.shift)
+
+write.table(rlog_all, "BDGP6_coding_up500_5utr_CDS_RNA_CAGE_rlog.txt", quote=F, sep="\t", row.names = F, col.names = T)
+```
+
+
+### scatter plot Bcc and Hcc
+```{r}
+rlog_all %>%  ggplot() + geom_point(aes(bam_CAGE, HS72_CAGE, color=cc_type), alpha = 4/10, size = 0.4) + scale_color_manual(values=c("Bcc"= Bcc_gene_color,"Hcc"= Hcc_g1_color)) + coord_fixed(ratio=1)  + 
+  theme_light()
+
+
+rlog_all %>% select(X, bam_RNA, HS72_RNA, gene_cc_type) %>% unique() %>%  ggplot() + geom_point(aes(bam_RNA, HS72_RNA, color=gene_cc_type), alpha = 4/10, size = 0.7) + scale_color_manual(values = c("Bcc_gene"=Bcc_gene_color, "Hcc_gene"=Hcc_g1_color, "both_gene" =both_g2_color)) + coord_fixed(ratio=1) + 
+  theme_light() 
+```
+
+
+
+
+```{r}
+sessionInfo()
+```
+

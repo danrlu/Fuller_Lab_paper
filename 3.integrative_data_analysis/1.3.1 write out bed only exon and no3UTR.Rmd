@@ -1,0 +1,71 @@
+---
+title: "Redo DE with only CAGE clusters that fall within exons"
+output: html_document
+date: "12/30/18"
+author: Dan Lu
+---
+
+
+Reason: Minx pointed out that by keeping up200bp, would limit the distance of Hcc upstream of Bcc, so try up500bp instead.  
+<br>
+## Goal: trying to only keep and count CAGE clusters that fall within protein coding exons but not within 3'UTR unless the 3'UTR overlaps with another exon.  
+## **practically created a .bed file that contains, for each gene ID, 1 row for each unique: from TSS to up500bp; 5'UTR; CDS.**
+<br>
+Need to manually remove the intron for Kmg after this.
+
+```{r}
+suppressWarnings(suppressMessages(library(DESeq2)))
+suppressWarnings(suppressMessages(library(tidyverse)))
+suppressWarnings(suppressMessages(library(magrittr)))
+
+options(tibble.width = Inf)
+options(scipen=999)
+
+source("~/Dropbox/coding/R/my_package/genomicsDL/R/gtf_to_bed.r")
+source("~/Dropbox/coding/R/my_package/genomicsDL/R/get_TSS.r")
+```
+
+
+```{r}
+gtf <- read.delim("~/Dropbox/z-seq analysis/genome/Drosophila_melanogaster.BDGP6.84.gtf", header=FALSE, comment.char="#", stringsAsFactors=FALSE) %>% filter(V1=="3R" | V1=="3L" | V1=="2R" | V1=="2L" | V1=="4" | V1=="X" | V1=="Y")
+
+levels(as.factor(gtf$V3))
+
+CDS=gtf_to_bed(gtf, "CDS", separate_item = T) %>% filter(gene_biotype=="protein_coding")
+utr5=gtf_to_bed(gtf, "five_prime_utr", separate_item = T) %>% filter(gene_biotype=="protein_coding")
+
+# take the 1st exon and keep TSS to upstream 500bp
+exon=gtf_to_bed(gtf, "exon", separate_item = T) %>% filter(gene_biotype=="protein_coding")
+
+exon1=filter(exon, exon_number==1) 
+exon1up500= get_TSS(exon1,keep_duplicate = T, up_stream = 500)
+
+# below is for keeping all exons
+# exon2=filter(exon, exon_number!=1)
+# nrow(exon)
+# nrow(exon1) + nrow(exon2)
+# 
+# exon1_fw=filter(exon1, X6=="+") %>% mutate(X2=X2-500)
+# exon1_rv=filter(exon1, X6=="-") %>% mutate(X3=X3+500)
+# exon_extended=bind_rows(exon1_fw, exon1_rv) %>% bind_rows(exon2) %>% select(X1:X6) %>% unique()
+
+up_5utr_CDS = bind_rows(exon1up500, utr5, CDS) %>% select(X1:X6) %>% unique() %>% arrange(X1, X2, X3)
+
+write.table(up_5utr_CDS, "BDGP6_coding_up500_5utr_CDS.bed", sep="\t", quote=F, row.names = F, col.names = F)
+
+# note a very small amount of transcript has no 5'UTR/3'UTR
+UTR3=gtf_to_bed(gtf, "three_prime_utr", separate_item = T) %>% filter(gene_biotype=="protein_coding")
+
+nrow(unique(select(utr5, transcript_id)))
+nrow(unique(select(UTR3, transcript_id)))
+nrow(unique(select(exon1, transcript_id)))
+nrow(unique(select(CDS, transcript_id)))
+
+```
+
+
+
+```{r}
+sessionInfo()
+```
+
