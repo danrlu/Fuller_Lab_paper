@@ -17,4 +17,4 @@
 
 **5.motif_analysis (Bash & online)** includes scripts for MEME suites. 
 
-**6.motifs_plots (Bash & online)** includes scripts for seqPattern plots. 
+**6.motifs_plots (Bash & R)** includes scripts for seqPattern plots. 
