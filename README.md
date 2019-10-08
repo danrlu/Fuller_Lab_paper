@@ -13,9 +13,6 @@
 
 **3.data_integrative_analysis (R)** includes scripts that integrates all available data to define gene groups. 
 
-
-============= sections below waiting for final version of paper ==================
-
 **4.sequencing_data_heatmap (Bash)** includes scripts that takes processed sequencing data in 1.a and gene groups from 2. to plot genomic heatmaps with deepTools.
 
 **5.motif_analysis (Bash & online)** includes scripts for MEME suites. 
