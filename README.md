@@ -7,7 +7,7 @@
   
   - ... our high performance computing cluster upgraded from SGE to SLURM somewhere in the middle of analysis so it's a mix of job script format.  
   
-  - ... normalization for bigwig in ATAC-seq and CAGE used 10x of RPM instead of RPM to avoid upper edge of data range smaller than 1.
+  - ... normalization for bigwig in ATAC-seq and CAGE used 10x of RPM instead of RPM to avoid data range smaller than 1.
   
 **1.sequencing_data_processing (Bash)** includes scripts that process raw sequencing data (RNA-seq, ATAC-seq, CAGE) to (a) files for viewing in genomic browser, and (b) raw read counts to downstream analysis. 
 
