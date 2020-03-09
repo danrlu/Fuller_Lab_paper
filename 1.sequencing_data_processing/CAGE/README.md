@@ -59,21 +59,29 @@ This script calls CAGEr.R to:
 
 #### 6. count reads in TSS clusters
 #### 6.1 convert .bam to .bed file keeping only the most 5' 1bp of the read (TSS). 
-This is preparation for the next step.
+This script first convert .bam to .bed (then used in step 7 below), they only keep the most 5' 1bp in .adj.srt.bed which is preparation for the next step.
 
 `sbatch Run06_B2B_adjBed.sh`
 
-#### 6.2 use the consensus TSS clusters built by CAGEr, and the adjusted .bed file from Run06 to count TSS expression level for each consensus TSS cluster.
+#### 6.2 use the consensus TSS clusters built by CAGEr, and the adjusted .adj.srt.bed file from 6.1 to count TSS expression level for each consensus TSS cluster.
 `sbatch Run14Bedtools_coverage_array.sh`
 
 <br>
 
 #### 7. create strand specific .bigwig for genomic viewer
-The input is the .bed file containing entire reads from Run06_B2B_adjBed.sh. Here use bedtools to only keep 1bp at the 5' of reads, then convert to .bedgraph normalizing with totla read counts, then cover to .bw
+#### 7.1 calculate normalization factor
+For each library, count total number of reads in .bed files generated in step 6.1 using `wc -l`, then calculate 10000000/total reads as the scale factor for the next step. This number is effectively 10x RPM to avoid data range less than 1.
 
+#### 7.2 create normalized .bw files
+The input is the .bed file containing ENTIRE reads generated in step 6.1. Here use bedtools to only keep 1bp at the 5' of reads, then convert to .bedgraph with `bedtools genomecov` and `-scale` option is the number from 7.1, then covert to .bw. 
+
+Split forward and reverse strand to be used for genomic viewer:
 `Run08Bed2BW_gCov_fw.sh`
 
 `Run08Bed2BW_gCov_rv.sh`
+
+Combines both strands to be used for plotting CAGE heatmaps in the paper. 
+`Run08Bed2BW_gCov_all.sh`
 
 <br>
 
