@@ -76,11 +76,13 @@ For each library, count total number of reads in .bed files generated in step 6.
 The input is the .bed file containing ENTIRE reads generated in step 6.1. Here use bedtools to only keep 1bp at the 5' of reads, then convert to .bedgraph with `bedtools genomecov` and `-scale` option is the number from 7.1, then covert to .bw. 
 
 Split forward and reverse strand to be used for genomic viewer:
+
 `Run08Bed2BW_gCov_fw.sh`
 
 `Run08Bed2BW_gCov_rv.sh`
 
-Combines both strands to be used for plotting CAGE heatmaps in the paper. 
+Combines both strands to be used for plotting CAGE heatmaps in the paper: 
+
 `Run08Bed2BW_gCov_all.sh`
 
 <br>
