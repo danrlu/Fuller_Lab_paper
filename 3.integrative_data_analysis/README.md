@@ -1,5 +1,5 @@
 ### Input: normalized read counts from RNA-seq and raw counts on CAGE
-### Goal: define different gene groups and generate: 
+### Goal: define different gene groups and generate the following files (can be found in /Data folder)
 
 ###   ...1) gene lists (ensemble ID.txt, TSS positions.bed) 
 ###   ...2) CAGE cluster 5' edge, 3' edge, mid point.bed for plotting
