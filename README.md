@@ -13,7 +13,7 @@
 
 **2.Differential_experssion_analysis (R)** includes scripts that normalize read counts across samples and do differential expression. 
 
-**3.data_integrative_analysis (R)** includes scripts that integrates all available data to define gene groups. Also contains the gene lists and associated .bed files for CAGE clusters.
+**3.data_integrative_analysis (R)** includes scripts that integrates all available data to define gene groups. **Also contains the gene lists and associated .bed files for CAGE clusters.**
 
 **4.sequencing_data_heatmap (Bash)** includes scripts that takes processed sequencing data in 1.a and gene groups from 2. to plot genomic heatmaps with deepTools.
 
