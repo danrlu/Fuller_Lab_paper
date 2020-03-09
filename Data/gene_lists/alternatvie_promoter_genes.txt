@@ -1,4 +1,4 @@
-#gene_ID	old_cluster	consensus_cluster_ID_old	cluster_ID_in_bam	new_cluster	consensus_cluster_ID_new	cluster_ID_in_HS72	distance_between_old_new	gene_name
+#gene_ID	old_cluster	consensus_cluster_ID_old	cluster_ID_in_bam	new_cluster	consensus_cluster_ID_new	cluster_ID_in_HS72	distance_between_old_new_domTSS	gene_name
 FBgn0000017	Bcc	cluster9480	clusterTSS_bam_7789	Hcc	cluster9479	clusterTSS_HS72_10767	629	Abl
 FBgn0000046	Bcc	cluster10712	clusterTSS_bam_8727	Hcc	cluster10713	clusterTSS_HS72_12164	448	Act87E
 FBgn0000057	Bcc	cluster4287	clusterTSS_bam_3496	Hcc	cluster4286	clusterTSS_HS72_4829	-170	adp
