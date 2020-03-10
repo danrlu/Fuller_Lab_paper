@@ -47,4 +47,4 @@ Here only use CAGE clusters that fall within 200bp from annotated TSS. The goal 
 
 #### ================ Step 5. generate scatterplot for paper Figure 1.
 
-5.1 Figure 1C,D (wait, did I just get to figure 1 after all these??!!)
+5.1 Figure 1C,D 
