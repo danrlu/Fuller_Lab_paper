@@ -1,7 +1,7 @@
 # Scripts for the paper from D. Lu, H.S. Sin, C. Lu and M. T. Fuller. GEO: GSE145975
-## == tutorials on how to reproduce the data analysis from the paper
+## == tutorials on how to reproduce the data pre-processing from the paper
 
-  - I'm trying to have all the scripts here to reproduce the data analysis. I'm keeping them as they are for record keeping, despite the following caveats:
+  - I'm keeping the scripts as they are for record keeping, despite the following caveats:
 
   - ... in several steps unzipping/writing out intermediate files was not necessary. I did it to make sure the intermediates were what I thought they were, but they consumes storage space.
   
@@ -15,7 +15,5 @@
 
 **2.Differential_experssion_analysis (R)** includes scripts that normalize read counts across samples and do differential expression. 
 
-**3.data_integrative_analysis (R)** includes scripts that integrates all available data to define gene groups. 
-
-**4.sequencing_data_heatmap (Bash)** includes scripts that takes processed sequencing data in 1.a and gene groups from 2. to plot genomic heatmaps with deepTools. (Need to figure out how to do this one since all files have changed names)
+**3.data_integrative_analysis (R)** includes scripts that integrates all available data to define gene groups and assing CAGE clusters to genes. 
 
