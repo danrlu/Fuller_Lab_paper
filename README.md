@@ -1,7 +1,3 @@
-=====================================================================
-### My sincere apologies to Mireille Schafer, Rainer Kuhn, Frank Bosse, Ulrich Schafer; and Rebeccah J. Katzenberger, Elizabeth A. Rach, Ashley K. Anderson, Uwe Ohler, David A. Wassarman for missing their work on TCE. Our CNAAATT motif is almost identical to the TCE they discovered in 1990 and 2012. I'm working on a Corrigendum.
-======================================================================
-
 ## Scripts for the paper from D. Lu, H.S. Sin, C. Lu and M. T. Fuller (GEO: GSE145975)
 
 UCSC public session: https://genome.ucsc.edu/s/danrlu/Fuller_paper
