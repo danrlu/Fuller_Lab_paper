@@ -1,4 +1,7 @@
-# Scripts for the paper from D. Lu, H.S. Sin, C. Lu and M. T. Fuller. GEO: GSE145975
+# Scripts for the paper from D. Lu, H.S. Sin, C. Lu and M. T. Fuller (GEO: GSE145975)
+
+UCSC public session: https://genome.ucsc.edu/s/danrlu/Fuller_paper
+
 ## == tutorials on how to reproduce the data pre-processing from the paper
 
   - I'm keeping the scripts as they are for record keeping, despite the following caveats:
@@ -17,3 +20,4 @@
 
 **3.data_integrative_analysis (R)** includes scripts that integrates all available data to define gene groups and assing CAGE clusters to genes. 
 
+# My apologies to Rebeccah J. Katzenberger, Elizabeth A. Rach, Ashley K. Anderson, Uwe Ohler, David A. Wassarman; and Mireille Schafer, Rainer Kuhn, Frank Bosse and Ulrich Schafer for missing their work on TCE. Our CNAAATT motif is almost identical to the TCE they discovered in 1990 and 2012. I'm working on a Corrigendum.
