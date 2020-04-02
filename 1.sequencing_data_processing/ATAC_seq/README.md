@@ -107,6 +107,10 @@ qsub Run09merge_broadpeaks.sh
 ```bash
 qsub Run09NATAC_array.sh
 ```
+The .bw on GEO is nucleoatac_signal.smooth.bw. See https://nucleoatac.readthedocs.io/en/latest/nucleoatac/
+
+The .bed.gz on GEO is nucmap_combined.bed.gz. See https://nucleoatac.readthedocs.io/en/latest/faq/
+
 
 ----
 last used 12/12/2017 on SGE with
